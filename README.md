@@ -1,4 +1,4 @@
-# OpenGym EX 2.0.2（Windows / Android 阶段开发版，名称待定）
+# OpenGym EX 2.0.3（Windows / Android 阶段开发版，名称待定）
 
 基于 openGym 保留训练引擎，新增离线营养、食谱、一周餐食、训练资料库与可选 DeepSeek 联合规划。本仓库是所有者的私有开发和备份仓库，保留上游历史与 AGPL 许可。下方保留上游说明；本项目的当前行为与命令以本段及 docs 为准。
 

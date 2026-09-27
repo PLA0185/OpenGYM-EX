@@ -41,7 +41,7 @@ Set-Location frontend
 npm run build:windows
 Set-Location ..
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1
-node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.2-portable.exe
+node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.3-portable.exe
 ```
 
 首次依赖准备／data:bootstrap 会恢复原始素材；如要高清，请在 bootstrap 后重新执行高清导入，然后构建。保留供应商原包、完整清单及许可，原包放私人目录，不上传公共源码。导入器只读取本地文件，不购买、抓取或执行供应商代码。新购买格式如为 MP4，需增加原生视频播放和视频元数据校验，不能改后缀当作 GIF 导入。

@@ -54,6 +54,27 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
       check(await win.webContents.executeJavaScript("document.querySelector('input[placeholder=\"输入 API 密钥\"]')?.type==='text'"),'Credential reveal avoids password keyboard')
     }
   }
+  // Reproduce a successful connection followed by object-shaped intake questions.
+  // These requests are synthetic and never reach a provider.
+  win.webContents.enableDeviceEmulation({screenPosition:'mobile',screenSize:{width:360,height:800},viewPosition:{x:0,y:0},viewSize:{width:360,height:800},deviceScaleFactor:1,scale:1})
+  check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.credential-actions .btn')).every(b=>{const r=b.getBoundingClientRect();return r.width>=120&&r.height>=44&&r.height<70&&r.right<=innerWidth})"),'Compact mobile credential actions')
+  await win.webContents.executeJavaScript("document.querySelector('.deepseek-settings').scrollIntoView({block:'start'})");await pause(200)
+  fs.writeFileSync(path.join(app.getPath('userData'),'settings-mobile.png'),(await win.webContents.capturePage()).toPNG())
+  await win.webContents.executeJavaScript(`window.__originalFetch=window.fetch;window.fetch=async(url,options)=>{if(String(url)!=='https://api.deepseek.com/chat/completions')return window.__originalFetch(url,options);const body=JSON.parse(options.body);let content='OK';if(body.messages[0].role==='system'){if(body.messages[0].content.includes('当前操作是追问'))content=JSON.stringify({questions:Array.from({length:8},(_,i)=>({question:'确认训练条件 '+(i+1)})),summary:'模拟：确认运动限制和忌口'});else{const input=JSON.parse(body.messages.find(m=>m.role==='user').content);content=JSON.stringify({program:{nameZh:'模拟联合计划',days:input.context.availableDays.map(weekday=>({weekday,dayName:'模拟训练日',exerciseItems:[{originalText:input.exercises[0].nameEn,sets:2,reps:10,restSec:90,weight:null}]}))},meals:input.dates.flatMap(date=>input.feasibleDayMenu.map(m=>({...m,date}))),explanation:'模拟响应验证，不是真实 AI 生成'});}}return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content}}]}),{status:200,headers:{'Content-Type':'application/json'}})};void 0`)
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='测试连接').click()",true);await pause(250)
+  check((await win.webContents.executeJavaScript('document.body.innerText')).includes('连接成功'),'Mock connection succeeds')
+  await win.webContents.executeJavaScript("location.hash='#/assistant'");await pause(500)
+  await win.webContents.executeJavaScript("(()=>{const field=document.querySelector('textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(field,'早上六点半到健身房，九点上班，请安排训练和早餐');field.dispatchEvent(new Event('input',{bubbles:true}));})()");await pause(100)
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='开始对话，确认需求').click()",true);await pause(500)
+  check(await win.webContents.executeJavaScript("document.querySelectorAll('input[placeholder=\"请明确回答，没有请写“无”\"]').length===8"),'Object-shaped eight-question intake reaches form')
+  for(let i=0;i<8;i++){await win.webContents.executeJavaScript(`(()=>{const field=document.querySelectorAll('input[placeholder="请明确回答，没有请写“无”"]')[${i}];Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,'无');field.dispatchEvent(new Event('input',{bubbles:true}));})()`);await pause(50)}
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.lrow')).find(r=>r.textContent.includes('以上限制和忌口已确认')).querySelector('[role=switch]').click()",true);await pause(100)
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='生成训练 + 一周饮食').click()",true)
+  let coachText='';for(let i=0;i<40;i++){await pause(250);coachText=await win.webContents.executeJavaScript('document.body.innerText');if(coachText.includes('审核训练与饮食'))break}
+  check(coachText.includes('审核训练与饮食'),'Mock intake proceeds to editable training and seven-day meal proposal: '+coachText.slice(-500))
+  await win.webContents.executeJavaScript("window.fetch=window.__originalFetch;document.querySelector('.feature-page').scrollIntoView({block:'start'})");await pause(200)
+  fs.writeFileSync(path.join(app.getPath('userData'),'assistant-mobile.png'),(await win.webContents.capturePage()).toPNG())
+  win.webContents.disableDeviceEmulation()
   const manifest=JSON.parse(fs.readFileSync(path.join(path.dirname(entry),'media-manifest.json'),'utf8'))
   const crypto=require('node:crypto')
   for(const m of manifest.files){const file=fs.readFileSync(path.join(path.dirname(entry),m.path));check(file.length===m.bytes,'Media size: '+m.path);check(crypto.createHash('sha256').update(file).digest('hex')===m.sha256,'Media hash: '+m.path)}
@@ -63,6 +84,6 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   check(await win.webContents.executeJavaScript('Array.from(document.images).some(img=>img.complete&&img.naturalWidth>0&&img.src.includes("/img/"))'),'Offline exercise image decode')
   await win.webContents.executeJavaScript("window.xunlianDesktop.credentialSet('')")
   check(!errors.length,'Renderer errors: '+errors.join('; '))
-  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
+  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Compact mobile credential actions','Mock connection, object-question intake and editable joint proposal','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
   fs.writeFileSync(path.join(app.getPath('userData'),'verification-report.json'),JSON.stringify(report,null,2));app.quit()
 }

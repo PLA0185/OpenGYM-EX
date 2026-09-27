@@ -21,9 +21,9 @@ Set-Location ..
 pwsh -NoProfile -File scripts/build-release.ps1
 ```
 
-Windows：`artifacts/windows/OpenGymEX-2.0.2-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
+Windows：`artifacts/windows/OpenGymEX-2.0.3-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
 
-Android：`artifacts/OpenGymEX-2.0.2-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.2-dev / versionCode 20002，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/DongQi-2.0.1-dev.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
+Android：`artifacts/OpenGymEX-2.0.3-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.3-dev / versionCode 20003，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/DongQi-2.0.1-dev.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
 
 Android 签名证书 SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。
 
@@ -64,3 +64,6 @@ Windows便携EXE包含大量离线媒体，启动前需解包。2.0.0采用嵌�
 
 
 2.0.2 新增依赖：Capacitor BLE、Clipboard 与 Health 插件（精确版本见锁文件）。Health Connect 运行能力单独检测。高清来源锁定在 sources.lock.json，22 帧哈希在 exercise-hq-manifest.json；bootstrap 恢复素材与完整 Unlicense NOTICE，构建再次核验。
+
+
+2.0.3 增加 @capacitor/app 7.1.2 监听安卓返回：关闭最上层可关闭弹窗、返回路由；首页连续两次返回才最小化回桌面，保留训练。追问兼容字符串／问题对象，完整 Schema 与具体修复错误发给模型；两次格式修复仍失败时明确使用本地确认问题，生成计划仍严格校验。新页面统一间距，密钥操作采用两列按钮。

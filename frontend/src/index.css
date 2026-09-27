@@ -933,3 +933,29 @@ input.num{background:var(--surface-2);color:var(--label);-webkit-text-fill-color
   .exmedia img{height:380px}
   .hm-wrap{display:flex;flex-direction:column;align-items:center}
 }
+
+/* Shared spacing for the newly added form and data pages. */
+.feature-page>h1{margin:0 0 12px;line-height:1.25}
+.feature-page>.sect-f{margin:0 0 16px;padding:0;line-height:1.5}
+.feature-page>.field{margin:0 0 12px}
+.feature-page>.btn+.btn{margin-top:8px}
+.feature-page>.btn+.sect{margin-top:20px}
+.feature-page .sect-b{padding:12px}
+.feature-page .sect-b>.lrow{padding:10px 0}
+.feature-page .lrow-m{gap:4px}
+.feature-page .sect-b>.sect-f{padding:0;margin:0 0 12px;line-height:1.5}
+.feature-page .sect-b>.btn+.btn{margin-top:8px}
+.feature-page .sect-b>.field+.btn{margin-top:8px}
+.feature-page .sect-b>.btn+.field{margin-top:16px}
+.feature-page .sect-b>.card{background:var(--surface-2);padding:12px}
+.feature-page .card>p{margin:0 0 8px;line-height:1.5}
+.feature-page .field,.credential-panel .field{background:var(--surface-2);border:1px solid var(--sep);line-height:1.4;min-height:44px}
+.feature-page .card>.field{background:var(--surface)}
+.feature-page .notice{line-height:1.5;margin:12px 0}
+.feature-page .sect-b>a{display:block;margin-top:12px;line-height:1.5}
+.feature-page .sect-b>pre{margin:0 0 12px;line-height:1.6}
+.credential-panel{padding:0 14px 14px;display:grid;gap:10px}
+.credential-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.credential-actions .btn{margin:0;min-height:44px;padding:10px 8px;line-height:1.3}
+.credential-clear{grid-column:1/-1}
+.credential-panel .sect-f{margin:0;padding:0;line-height:1.5}

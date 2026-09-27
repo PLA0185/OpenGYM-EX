@@ -1,7 +1,7 @@
 {
   "name": "opengym-frontend",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^7.3.2",
+    "@capacitor/app": "7.1.2",
     "@capacitor/clipboard": "^7.0.4",
     "@capacitor/core": "^7.6.8",
     "@capacitor/filesystem": "^7.1.8",
@@ -74,7 +75,7 @@
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "OpenGymEX-2.0.2-portable.exe",
+      "artifactName": "OpenGymEX-2.0.3-portable.exe",
       "useZip": true
     }
   }
