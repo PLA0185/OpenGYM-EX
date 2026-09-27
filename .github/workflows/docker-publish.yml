@@ -1,9 +1,6 @@
 name: Publish Docker images
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -12,6 +9,7 @@ permissions:
 
 jobs:
   build:
+    if: vars.ALLOW_CONTAINER_PUBLISH == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:

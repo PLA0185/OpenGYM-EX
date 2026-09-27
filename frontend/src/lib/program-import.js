@@ -15,11 +15,15 @@ export function parseProgramText(text, catalog, aliases = {}) {
     const rest=line.match(/(?:组间\s*)?(?:休息|rest)\s*[:：=]?\s*(\d+(?:\.\d+)?)\s*(分钟|分|min(?:utes?)?|秒|s(?:ec(?:onds?)?)?)/i)
     const percent=line.match(/(\d+(?:\.\d+)?)\s*%\s*(?:1\s*RM)?/i)
     const reps=count[2] || line.match(/(\d+)\s*(?:次|reps?)/i)?.[1]
+    const repRange=line.match(/(\d+)\s*[-–~至到]\s*(\d+)\s*(?:次|reps?)/i)
+    const duration=line.match(/(?:每组|持续|动作时间|[×x*])\s*[:：=]?\s*(\d+(?:\.\d+)?)\s*(分钟|分|min(?:utes?)?|秒|s(?:ec(?:onds?)?)?)/i)
+    const rpe=line.match(/\bRPE\s*[:：=]?\s*(\d+(?:\.\d+)?)/i),rir=line.match(/\bRIR\s*[:：=]?\s*(\d+(?:\.\d+)?)/i)
+    const tempo=line.match(/(?:tempo|节奏)\s*[:：=]?\s*([\dXx]+(?:[-–][\dXx]+){2,3})/i)
     const firstNumber=line.search(/\d/), name=line.slice(0,firstNumber).replace(/^[#\-\s\d.)、]+/,'').replace(/(?:周|星期)[一二三四五六日天]/,'').replace(/[:：,，·\s]+$/,'').trim()
     if(!name)throw new Error('动作名须写在训练参数前，例如：杠铃卧推 40kg 3组×8次 休息120秒')
     const mapping=mapEntity(name,catalog,aliases)
     if(!day){day={weekday:1,dayName:'周一（可修改）',exerciseItems:[]};days.push(day)}
-    day.exerciseItems.push({...mapping,sourceLine:line,exerciseId:mapping.selectedExerciseId,sets:Number(count[1]),...(reps?{reps:Number(reps)}:{}),...(weights[0]?{weight:Number(weights[0][1]),weightUnit:/磅|lb/i.test(weights[0][2])?'lb':'kg'}:{}),...(rest?{restSec:Number(rest[1])*(/分|min/i.test(rest[2])?60:1)}:{}),...(percent?{percent1RM:Number(percent[1])}:{}),estimatedFields:[]})
+    day.exerciseItems.push({...mapping,sourceLine:line,notes:line,exerciseId:mapping.selectedExerciseId,sets:Number(count[1]),...(repRange?{reps:null,repsMin:Number(repRange[1]),repsMax:Number(repRange[2])}:reps?{reps:Number(reps)}:{}),...(duration?{durationSec:Number(duration[1])*(/分|min/i.test(duration[2])?60:1)}:{}),...(rpe?{rpe:Number(rpe[1])}:{}),...(rir?{rir:Number(rir[1])}:{}),...(tempo?{tempo:tempo[1]}:{}),...(weights[0]?{weight:Number(weights[0][1]),weightUnit:/磅|lb/i.test(weights[0][2])?'lb':'kg'}:{}),...(rest?{restSec:Number(rest[1])*(/分|min/i.test(rest[2])?60:1)}:{}),...(percent?{percent1RM:Number(percent[1])}:{}),estimatedFields:[]})
   }
   if(!days.some(d=>d.exerciseItems.length))throw new Error('未读到明确的组数；请用“杠铃卧推 40kg 3组×8次 休息120秒”格式，或使用 AI 解析')
   return {nameZh:'导入训练方案',nameEn:'',progression:'off',days:days.filter(d=>d.exerciseItems.length)}

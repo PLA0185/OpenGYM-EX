@@ -1,5 +1,5 @@
 """Build licensed offline artifacts from pinned original sources; Python standard library only."""
-import hashlib, json, pathlib, re, shutil, subprocess, zipfile, datetime
+import hashlib, json, pathlib, re, shutil, subprocess, zipfile, datetime, math
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 RAW = ROOT / 'data/raw'
 OUT = ROOT / 'frontend/src/data'
@@ -35,11 +35,11 @@ COMMON = [
 ('草莓','Strawberries, raw'),('蓝莓','Blueberries, raw'),('花生','Peanuts, all types, raw'),('核桃','Nuts, walnuts, english'),
 ('杏仁','Nuts, almonds'),('酸奶','Yogurt, plain, low fat, 12 grams protein per 8 ounce'),('希腊酸奶','Yogurt, Greek, plain, nonfat'),
 ('牛肉','Beef, ground, 90% lean meat / 10% fat, raw'),('猪里脊','Pork, fresh, loin, tenderloin, separable lean only, raw'),
-('三文鱼','Fish, salmon, Atlantic, farmed, raw'),('虾','Crustaceans, shrimp, mixed species, raw'),('金枪鱼','Fish, tuna, light, canned in water, drained solids'),
-('红薯','Sweet potato, raw, unprepared'),('玉米','Corn, sweet, yellow, raw'),('小麦粉','Wheat flour, white, all-purpose, unenriched'),
+('三文鱼','Fish, salmon, Atlantic, farmed, raw'),('虾','Crustaceans, shrimp, raw'),('金枪鱼','Fish, tuna, light, canned in water, drained solids'),
+('红薯',"Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"),('玉米','Corn, sweet, yellow, raw'),('小麦粉','Wheat flour, white, all-purpose, unenriched'),
 ('小葱','Onions, spring or scallions (includes tops and bulb), raw'),('姜','Ginger root, raw'),('蜂蜜','Honey'),('黑胡椒','Spices, pepper, black'),
 ('芝麻','Seeds, sesame seeds, whole, dried'),('芝麻油','Oil, sesame, salad or cooking'),('花生酱','Peanut butter, smooth style, without salt'),
-('水','Water, tap, drinking'),('意大利面','Pasta, cooked, unenriched, without added salt'),('糙米饭','Rice, brown, long-grain, cooked'),
+('水','Beverages, water, tap, drinking'),('意大利面','Pasta, cooked, unenriched, without added salt'),('糙米饭',"Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)"),
 ('毛豆','Edamame, frozen, prepared'),('扁豆','Lentils, mature seeds, cooked, boiled, without salt'),('鹰嘴豆','Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt')]
 NAME_RULES = [('chicken','鸡肉'),('beef','牛肉'),('pork','猪肉'),('turkey','火鸡肉'),('fish','鱼类'),('egg','鸡蛋'),('milk','牛奶'),('yogurt','酸奶'),('cheese','奶酪'),('rice','米饭/大米'),('oat','燕麦'),('bread','面包'),('wheat','小麦'),('flour','面粉'),('bean','豆类'),('tofu','豆腐'),('tomato','番茄'),('onion','洋葱'),('potato','土豆'),('carrot','胡萝卜'),('broccoli','西兰花'),('spinach','菠菜'),('banana','香蕉'),('apple','苹果'),('orange','橙子'),('strawberr','草莓'),('blueberr','蓝莓'),('cabbage','白菜/卷心菜'),('mushroom','蘑菇'),('oil','油脂'),('nut','坚果'),('pepper','椒类'),('seed','种子'),('sugar','糖类'),('pasta','面食'),('water','饮用水'),('salt','食盐'),('sauce','酱料'),('hummus','鹰嘴豆泥'),('fruit','水果'),('vegetable','蔬菜'),('cereal','谷物'),('juice','果汁'),('soup','汤'),('sandwich','三明治'),('salad','沙拉')]
 keys = {1008:'kcal',1003:'proteinG',1004:'fatG',1005:'carbsG',1079:'fiberG',1093:'sodiumMg',1092:'potassiumMg',1087:'calciumMg',1089:'ironMg'}
@@ -60,9 +60,13 @@ for filename, key, release, urlname in [('foundation.zip','FoundationFoods','202
                 val = next((a.get('amount') for a in r.get('foodNutrients',[]) if a.get('nutrient',{}).get('id') == nid),None)
                 if val is not None: n['kcal'] = val; break
         if n['kcal'] is None: continue
+        anomalies=[dict(nutrient=k,sourceValue=v,reason='negative or nonfinite database value; calculation uses unknown') for k,v in n.items() if v is not None and (not math.isfinite(v) or v<0)]
+        for anomaly in anomalies: n[anomaly['nutrient']]=None
+        if n['kcal'] is None: continue
         name = r['description']; zh = next((z for z,en in COMMON if en.casefold()==name.casefold()),'')
         food = dict(id='fdc-'+str(r['fdcId']),nameEn=name,nameZh=zh or next((z for en,z in NAME_RULES if en in name.casefold()),'食物')+'（名称待细译）',aliasesZh=[zh] if zh else [],aliasesEn=[],source='USDA FDC',sourceId=str(r['fdcId']),sourceRelease=release,sourceUrl='https://fdc.nal.usda.gov/food-details/'+str(r['fdcId'])+'/nutrients',category=name.split(',')[0],foodType='cooked' if re.search(r'cooked|boiled|fried|roasted',name,re.I) else 'raw' if 'raw' in name.lower() else 'unspecified',nutritionBasis='per100g edible portion',nutritionPer100g=n,portionHints=[dict(description=p.get('portionDescription') or p.get('modifier') or p.get('measureUnit',{}).get('name'),grams=p.get('gramWeight'),amount=p.get('amount',1)) for p in r.get('foodPortions',[]) if p.get('gramWeight',0)>0],verified=True,translationSource='manual' if zh else 'category-rule',updatedAt=release)
         foods.append(food)
+        if anomalies: food['sourceAnomalies']=anomalies
 lookup = {}
 for zh,en in COMMON:
     f = next((f for f in foods if f['nameEn'].casefold()==en.casefold()),None)
@@ -110,13 +114,35 @@ for path in sorted((repo/'dishes').rglob('*.md')):
         if original.is_file() and original.is_relative_to(repo.resolve()) and original.suffix.lower() in ['.jpg','.jpeg','.png','.webp']:
             filename=sha(original)[:20]+original.suffix.lower(); shutil.copyfile(original,PUBLIC/filename); imgs.append('recipe-images/'+filename)
     recipes.append(dict(id='htc-'+hashlib.sha256(rel.encode()).hexdigest()[:16],nameZh=name,nameEn='',originalName=name,servings=1,servingsBasis='unknown-needs-review',ingredients=ingredients,steps=steps,image=imgs[0] if imgs else None,imageSource=rel,imageLicense='Unlicense (repository)',source='HowToCook',sourceUrl='https://github.com/Anduin2017/HowToCook/blob/'+COMMIT+'/'+rel,license='Unlicense',sourceRelease=COMMIT,revision=1,tags=[path.parent.name],originalText=text,verified=False))
+    recipes[-1]['category']=path.relative_to(repo/'dishes').parts[0]
 
 # Explicit local combinations, not attributed to HowToCook. All portions are transparent suggestions.
 combos=[('鸡胸西兰花饭','Chicken broccoli rice',[('熟鸡胸肉',160),('白米饭',220),('西兰花',150),('橄榄油',8)]),('燕麦牛奶香蕉','Oats milk banana',[('燕麦片',60),('全脂牛奶',250),('香蕉',100)]),('鸡蛋番茄饭','Egg tomato rice',[('鸡蛋',100),('西红柿',200),('白米饭',200),('菜籽油',8)]),('豆腐蔬菜饭','Tofu vegetable rice',[('豆腐',200),('白米饭',200),('胡萝卜',100),('西兰花',100),('菜籽油',8)]),('酸奶水果碗','Yogurt fruit bowl',[('希腊酸奶',200),('香蕉',100),('杏仁',20)]),('三文鱼米饭','Salmon rice',[('三文鱼',160),('白米饭',200),('西兰花',150),('橄榄油',5)]),('鸡蛋燕麦早餐','Egg oats breakfast',[('鸡蛋',100),('燕麦片',60),('全脂牛奶',200)]),('牛肉蔬菜饭','Beef vegetable rice',[('牛肉',150),('白米饭',200),('胡萝卜',100),('洋葱',60),('菜籽油',5)])]
+combos += [
+('鸡胸黄瓜糙米饭','Chicken cucumber brown rice',[('熟鸡胸肉',150),('糙米饭',200),('黄瓜',150),('橄榄油',5)]),
+('虾仁西兰花饭','Shrimp broccoli rice',[('虾',180),('白米饭',200),('西兰花',150),('菜籽油',6)]),
+('猪里脊菠菜饭','Pork spinach rice',[('猪里脊',160),('白米饭',200),('菠菜',150),('菜籽油',6)]),
+('金枪鱼黄瓜饭','Tuna cucumber rice',[('金枪鱼',150),('白米饭',220),('黄瓜',150),('橄榄油',5)]),
+('豆腐毛豆饭','Tofu edamame rice',[('豆腐',150),('毛豆',120),('白米饭',180),('胡萝卜',100)]),
+('鹰嘴豆西红柿糙米饭','Chickpea tomato brown rice',[('鹰嘴豆',180),('糙米饭',180),('西红柿',150),('橄榄油',5)]),
+('扁豆菠菜豆腐饭','Lentil spinach tofu rice',[('扁豆',160),('豆腐',150),('白米饭',150),('菠菜',100)]),
+('鸡胸土豆胡萝卜','Chicken potato carrot',[('熟鸡胸肉',160),('土豆',250),('胡萝卜',150),('菜籽油',6)]),
+('牛肉番茄意面','Beef tomato pasta',[('牛肉',160),('意大利面',200),('西红柿',200),('橄榄油',5)]),
+('三文鱼红薯西兰花','Salmon sweet potato broccoli',[('三文鱼',150),('红薯',250),('西兰花',150)]),
+('豆腐香菇糙米饭','Tofu mushroom brown rice',[('豆腐',220),('香菇',150),('糙米饭',180),('菜籽油',5)]),
+('鸡蛋菠菜糙米饭','Egg spinach brown rice',[('鸡蛋',150),('菠菜',150),('糙米饭',200),('菜籽油',5)]),
+('鸡蛋红薯早餐','Egg sweet potato breakfast',[('鸡蛋',150),('红薯',220),('西红柿',150)]),
+('无奶燕麦香蕉碗','Dairy free oat banana bowl',[('燕麦片',60),('香蕉',100),('水',200)]),
+('酸奶燕麦蓝莓碗','Yogurt oat blueberry bowl',[('希腊酸奶',250),('燕麦片',40),('蓝莓',100)]),
+('毛豆鸡蛋玉米餐','Edamame egg corn',[('毛豆',150),('鸡蛋',100),('玉米',180)]),
+('鸡胸卷心菜饭','Chicken cabbage rice',[('熟鸡胸肉',160),('卷心菜',200),('白米饭',200),('菜籽油',6)]),
+('虾仁豆腐番茄饭','Shrimp tofu tomato rice',[('虾',150),('豆腐',120),('西红柿',150),('白米饭',180),('菜籽油',5)]),
+('金枪鱼鹰嘴豆沙拉','Tuna chickpea salad',[('金枪鱼',140),('鹰嘴豆',150),('黄瓜',150),('西红柿',150),('橄榄油',5)]),
+('鸡胸南瓜饭','Chicken pumpkin rice',[('熟鸡胸肉',150),('南瓜',200),('白米饭',200),('菜籽油',6)])]
 for i,(zh,en,parts) in enumerate(combos):
     missing=[name for name,g in parts if name not in lookup]
     if missing: raise ValueError('Missing curated Food mapping: '+str(missing))
-    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText=name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=['称量可食部分；食材生熟状态以食材条目为准，米饭及熟鸡胸肉按熟重。','肉、鱼和鸡蛋充分烹熟；蔬菜洗净煮熟或炒熟。','按原料组合装盘。用油按实际加入量调整。'],source='Xunlian portion suggestions',sourceUrl='',license='AGPL-3.0',revision=1,verified=True,tags=['动起组合'],notes='建议份量；非原作者食谱，营养按原料计算，未计烹饪损失。'))
+    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText=name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=['称量可食部分；食材生熟状态以食材条目为准，米饭及熟鸡胸肉按熟重。','肉、鱼和鸡蛋充分烹熟；蔬菜洗净煮熟或炒熟；酸奶与水果可直接组合。','按原料组合装盘。用油按实际加入量调整。'],source='Xunlian portion suggestions',sourceUrl='',license='AGPL-3.0',revision=1,verified=True,prepMinutes=10 if any(t in zh for t in ['碗','沙拉']) else 25,prepTimeBasis='应用备餐时间估算，非实测',tags=['应用组合'],notes='建议份量；非原作者食谱，营养按原料计算，未计烹饪损失。'))
 write(OUT/'recipes.json',recipes)
 
 # Conservative Chinese names: reviewed common exercises plus compositional glossary, with provenance.

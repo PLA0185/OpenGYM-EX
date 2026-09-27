@@ -1,3 +1,4 @@
+import { requiredMealSlots } from '../lib/meal-slots.js'
 import { requireAI, aiErrorMessage } from '../lib/ai-errors.js'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -9,6 +10,8 @@ import { allExercises } from '../lib/exercises.js'
 import { builtInPrograms, guidelinePrograms, analyzeProgram } from '../lib/programs.js'
 import { planningContext, clone, monday, dateKeys, dailyTotals } from '../lib/nutrition.js'
 import { eligibleRecipes, validateMeals, applyJoint } from '../lib/planning-engine.js'
+import { balanceCoachMeals } from '../lib/meal-portions.js'
+import { feasibleMenu } from '../lib/assistant-plan.js'
 import { allFoods, allRecipes, nutritionLine } from './Nutrition.jsx'
 import { createDeepSeek } from '../lib/deepseek.js'
 import { getCredential } from '../lib/credentials.js'
@@ -20,10 +23,12 @@ export default function JointPlanning() {
   const dates=dateKeys(start),catalog=allExercises(S),foods=allFoods(S),programs=[...S.xunlian.programs,...guidelinePrograms(catalog),...builtInPrograms(catalog)],recipes=eligibleRecipes(allRecipes(S),foods,S.xunlian.profile).slice(0,80)
   const generate=()=>ai.run(async signal=>{setError('');try{
     requireAI(S);requireAI(S,{target:true})
-    const input={task:'Generate ONE coordinated training and nutrition week. Choose a supplied programId and supplied recipeIds only. Preserve supplied nutrition target. Each date needs breakfast/lunch/dinner, energy within 20% and protein within 30% (at least 20g tolerance) of target. Consider training days, time, allergies, equipment and personal needs. Explain recovery and meal timing.',context:planningContext(S),dates,needs,programs:programs.map(p=>({id:p.id,name:p.nameZh,days:p.days,analysis:analyzeProgram(p,catalog)})),recipes:recipes.map(r=>({id:r.id,name:r.nameZh,ingredients:r.ingredients.map(i=>foods.find(f=>f.id===i.foodId)?.nameZh),nutrition:dailyRecipe(r)}))}
-    const validate=result=>{if(!programs.some(p=>p.id===result.programId))throw new Error('Unknown training program ID');validateMeals(result,dates,recipes,foods,S.xunlian.profile,S.xunlian.target,uid)}
+    const input={task:'Generate ONE coordinated training and nutrition week. Choose a supplied programId and supplied recipeIds only. Preserve supplied nutrition target. Each date needs supplied requiredSlots, energy within 20% and protein within 30% (at least 20g tolerance) of target. Consider training days, time, allergies, equipment and personal needs. Explain recovery and meal timing.',context:planningContext(S),dates,needs,programs:programs.map(p=>({id:p.id,name:p.nameZh,days:p.days,analysis:analyzeProgram(p,catalog)})),recipes:recipes.map(r=>({id:r.id,name:r.nameZh,ingredients:r.ingredients.map(i=>foods.find(f=>f.id===i.foodId)?.nameZh),nutrition:dailyRecipe(r)}))}
+    const menu=feasibleMenu(recipes,foods,S.xunlian.target,{profile:S.xunlian.profile});if(!menu)throw new Error('当前菜谱无法满足营养目标，请补充符合忌口的完整菜谱。');input.feasibleDayMenu=menu;input.requiredSlots=requiredMealSlots(S.xunlian.profile)
+    let balanced
+    const validate=result=>{if(!programs.some(p=>p.id===result.programId))throw new Error('Unknown training program ID');balanced=balanceCoachMeals(result,dates,recipes,foods,S.xunlian.profile,S.xunlian.target,menu,uid)}
     const result=await createDeepSeek({credential:getCredential,model:S.xunlian.ai.model}).generateStructured('joint',input,{signal,validate})
-    const p={kind:'joint',id:uid(),...result,program:clone(programs.find(p=>p.id===result.programId)),target:clone(S.xunlian.target),snapshots:validateMeals(result,dates,recipes,foods,S.xunlian.profile,S.xunlian.target,uid),dates,baseRevision:S.xunlian.revision,model:S.xunlian.ai.model,createdAt:Date.now()}
+    const p={kind:'joint',id:uid(),...result,meals:balanced.meals,explanation:[result.explanation,balanced.note].filter(Boolean).join(' '),program:clone(programs.find(p=>p.id===result.programId)),target:clone(S.xunlian.target),snapshots:balanced.snapshots,dates,baseRevision:S.xunlian.revision,model:S.xunlian.ai.model,createdAt:Date.now()}
     setProposal(p);update(s=>{s.xunlian.proposals.unshift(p);s.xunlian.proposals=s.xunlian.proposals.slice(0,10)})
   }catch(e){setError(aiErrorMessage(e))}})
   function dailyRecipe(r){return r.ingredients.reduce((n,i)=>{const f=foods.find(f=>f.id===i.foodId);for(const k of ['kcal','proteinG','fatG','carbsG'])n[k]=(n[k]||0)+f.nutritionPer100g[k]*i.grams/100/r.servings;return n},{})}

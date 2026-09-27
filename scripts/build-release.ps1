@@ -1,3 +1,4 @@
+param([switch]$AllowNewSigningKey)
 $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
 if(!$env:JAVA_HOME){$env:JAVA_HOME='D:\DeepSeekHarnessData\jdk-21'}
@@ -13,6 +14,7 @@ if(Test-Path -LiteralPath $keyFile){
     if(!(Test-Path -LiteralPath $passwordFile)){throw 'Signing password file missing; preserve existing keystore'}
     $securePassword=Import-Clixml -LiteralPath $passwordFile
 }else{
+    if(!$AllowNewSigningKey){throw 'Original signing key missing. Restore signing-vault with scripts/signing-migration.ps1 before building an upgrade; new signing requires explicit -AllowNewSigningKey.'}
     $bytes=[byte[]]::new(32)
     [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
     $securePassword=ConvertTo-SecureString ([Convert]::ToBase64String($bytes)) -AsPlainText -Force
@@ -30,7 +32,8 @@ try{
         if($LASTEXITCODE -ne 0){throw 'Web build failed'}
         & '.\android\gradlew.bat' -p '.\android' assembleRelease --console=plain
         if($LASTEXITCODE -ne 0){throw 'Release build failed'}
-        $target=Join-Path $taskRoot 'artifacts\OpenGymEX-2.0.3-personal.apk'
+        $releaseVersion=(Get-Content -LiteralPath (Join-Path $taskRoot 'frontend/package.json') -Raw | ConvertFrom-Json).version
+        $target=Join-Path $taskRoot ('artifacts\OpenGymEX-'+$releaseVersion+'-personal.apk')
         & (Join-Path $env:ANDROID_HOME 'build-tools\36.0.0\apksigner.bat') sign --ks $keyFile --ks-key-alias xunlian-personal --ks-pass env:XUNLIAN_SIGN_PASSWORD --key-pass env:XUNLIAN_SIGN_PASSWORD --out $target '.\android\app\build\outputs\apk\release\app-release-unsigned.apk'
         if($LASTEXITCODE -ne 0){throw 'APK signing failed'}
         & (Join-Path $env:ANDROID_HOME 'build-tools\36.0.0\apksigner.bat') verify --verbose --print-certs $target

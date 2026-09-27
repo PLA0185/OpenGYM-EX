@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { targets, planningContext, validateTarget, clone, dateKeys, monday, localDate } from '../lib/nutrition.js'
+import { targets, planningContext, validateTarget,validatePlanningProfile, clone, dateKeys, monday, localDate } from '../lib/nutrition.js'
 import { createDeepSeek, MODELS } from '../lib/deepseek.js'
 import { getCredential, setCredential, clearCredential } from '../lib/credentials.js'
 import { weeklyEvidence } from '../lib/programs.js'
@@ -31,7 +31,7 @@ export function DeepSeekSettings() {
 export default function Planning() {
   const S=useStore(s=>s.S),update=useStore(s=>s.update),nav=useNavigate(),toast=useUI(s=>s.toast),[profile,setProfile]=useState(clone(S.xunlian.profile)),[target,setTarget]=useState(S.xunlian.target||{kcal:2200,proteinG:120,fatG:60,carbsG:295}),[error,setError]=useState('')
   const change=(k,v)=>setProfile({...profile,[k]:v})
-  const save=()=>{try{validateTarget(target);update(s=>{s.xunlian.profile=profile;s.xunlian.target=target;s.xunlian.revision++});toast(t('Profile saved'))}catch(e){setError(t('Complete a valid nutrition target'))}}
+  const save=()=>{try{validateTarget(target);validatePlanningProfile(profile);update(s=>{s.xunlian.profile=profile;s.xunlian.target=target;s.xunlian.revision++});toast(t('Profile saved'));setError('')}catch(e){setError(e.message)}}
   return <div className="narrow feature-page"><div className="hdr"><button className="iconbtn" onClick={()=>nav('/nutrition')}><Icon name="chevronLeft"/></button><h1>{t('Planning profile')}</h1></div>
   <Section title={t('Body and goals')} footer={t('Latest body weight is shared with training. Calculated targets are estimates and can be edited.')}>
   <SelectRow title={t('Goal')} value={profile.goal} onChange={v=>change('goal',v)} options={[['maintain','Maintain weight'],['lose','Lose weight'],['gain','Gain weight']].map(([value,label])=>({value,label:t(label)}))}/>
@@ -40,6 +40,9 @@ export default function Planning() {
   <SelectRow title={t('Activity factor')} value={profile.activity} onChange={v=>change('activity',v)} options={[1.2,1.4,1.6,1.8].map(value=>({value,label:String(value)}))}/>
   <Row title={t('Special diet / pregnancy / medical constraints')}><Switch checked={profile.specialDiet} onChange={v=>change('specialDiet',v)}/></Row></Section>
   <Section title={t('Training and lifestyle')}>
+  <SelectRow title="饮食方式" value={profile.dietStyle||'omnivore'} onChange={v=>change('dietStyle',v)} options={[{value:'omnivore',label:'不限'},{value:'vegetarian',label:'蛋奶素（不含肉和鱼）'},{value:'vegan',label:'纯素（不含动物食品）'}]}/>
+  <Row title="单次备餐分钟上限" subtitle="可留空；菜谱时间为应用估算"><NumberField nullable value={profile.cookingMinutes} onChange={v=>change('cookingMinutes',v)}/></Row>
+  <Row title="每日原料预算（元）" subtitle="可留空；准确校验需在食材详情填写价格"><NumberField nullable value={profile.dailyBudgetCny} onChange={v=>change('dailyBudgetCny',v)}/></Row>
   {ALLERGENS.map(a=><Row key={a} title={a+' · '+t('Exclude ingredient')}><Switch checked={(profile.excludedAllergens||[]).includes(a)} onChange={v=>change('excludedAllergens',v?[...(profile.excludedAllergens||[]),a]:(profile.excludedAllergens||[]).filter(x=>x!==a))}/></Row>)}
   {[['trainingExperience','Training experience'],['trainingGoal','Training goal'],['equipment','Available equipment'],['limitations','Injuries or limitations'],['cookingAvailability','Cooking availability and tools'],['allergies','Allergies / excluded foods'],['dislikedFoods','Disliked foods'],['preferences','Food preferences'],['budget','Budget'],['sleepSchedule','Sleep schedule'],['workSchedule','Work schedule']].map(([key,label])=><Row key={key} title={t(label)}><TextField value={profile[key]||''} onChange={e=>change(key,e.target.value)}/></Row>)}
   <Row title={t('Training time')}><TextField type="time" value={profile.trainingTime||'18:30'} onChange={e=>change('trainingTime',e.target.value)}/></Row>

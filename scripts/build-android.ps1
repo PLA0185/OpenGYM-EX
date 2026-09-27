@@ -11,5 +11,6 @@ try {
     & '.\android\gradlew.bat' -p '.\android' assembleDebug --console=plain
     if($LASTEXITCODE -ne 0){throw 'Android build failed'}
     New-Item -ItemType Directory -Force -Path (Join-Path $taskRoot 'artifacts') | Out-Null
-    Copy-Item -LiteralPath '.\android\app\build\outputs\apk\debug\app-debug.apk' -Destination (Join-Path $taskRoot 'artifacts\DongQi-2.0.1-dev.apk')
+    $debugVersion=(Get-Content -LiteralPath (Join-Path $taskRoot 'frontend/package.json') -Raw | ConvertFrom-Json).version
+    Copy-Item -LiteralPath '.\android\app\build\outputs\apk\debug\app-debug.apk' -Destination (Join-Path $taskRoot ('artifacts\OpenGymEX-'+$debugVersion+'-debug.apk'))
 }finally{Pop-Location}

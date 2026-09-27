@@ -6,7 +6,7 @@ const foodIndexes=new WeakMap()
 export function foodIndex(foods){let index=foodIndexes.get(foods);if(!index){index=new Map(foods.map(f=>[f.id,f]));foodIndexes.set(foods,index)}return index}
 export function scaleNutrition(n, factor) {
   if (!positive(factor)) throw new Error('Invalid portion')
-  return Object.fromEntries(NUTRIENTS.map(k => [k, Number.isFinite(n?.[k]) ? n[k] * factor : null]))
+  return Object.fromEntries(NUTRIENTS.map(k => [k, Number.isFinite(n?.[k]) && n[k]>=0 ? n[k] * factor : null]))
 }
 export function sumNutrition(list) {
   return Object.fromEntries(NUTRIENTS.map(k => [k, !list.length ? 0 : list.every(n => Number.isFinite(n?.[k])) ? list.reduce((a, n) => a + n[k], 0) : null]))
@@ -32,6 +32,13 @@ export function targets(profile, weight) {
 export function validateTarget(target) {
   if (!positive(target.kcal, 8000) || target.kcal < 800 || !['proteinG','fatG','carbsG'].every(k => typeof target[k] === 'number' && Number.isFinite(target[k]) && target[k] >= 0 && target[k] < 1000)) throw new Error('Invalid nutrition target')
   return target
+}
+export function validatePlanningProfile(profile){
+  if(!profile||typeof profile!=='object'||Array.isArray(profile))throw new Error('个人档案格式不正确。')
+  const ranges={age:[12,100,true],weightKg:[25,350],heightCm:[100,250],trainingDays:[1,7,true],trainingDuration:[10,180],mealCount:[1,6,true],repeatMeals:[1,42,true],cookingMinutes:[1,600],dailyBudgetCny:[1,10000]}
+  for(const [key,[min,max,integer]] of Object.entries(ranges)){const value=profile[key];if(value!=null&&value!==''&&(!Number.isFinite(value)||value<min||value>max||(integer&&!Number.isInteger(value))))throw new Error(key+' 需为 '+min+'–'+max+(integer?' 的整数。':'。'))}
+  if(profile.foodPrices!=null&&(typeof profile.foodPrices!=='object'||Array.isArray(profile.foodPrices)||Object.keys(profile.foodPrices).length>5000||Object.values(profile.foodPrices).some(p=>!Number.isFinite(p)||p<0||p>10000)))throw new Error('食材价格格式不正确。')
+  return profile
 }
 export function mealSnapshot(recipe, foods, servings, date, slot, id) {
   const result = recipeNutrition(recipe, foods, servings)

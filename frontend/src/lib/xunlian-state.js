@@ -1,8 +1,8 @@
-import { clone, emptyXunlian, positive, validateTarget, NUTRIENTS, localDate } from './nutrition.js'
+import { clone, emptyXunlian, positive, validateTarget, validatePlanningProfile,NUTRIENTS, localDate } from './nutrition.js'
 import { ProgramSchema, ReviewSchema } from './deepseek.js'
 const dateValid=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(+new Date(d+'T12:00:00'))&&localDate(new Date(d+'T12:00:00'))===d
 function validNutrition(n){return n&&typeof n==='object'&&!Array.isArray(n)&&NUTRIENTS.every(k=>n[k]==null||(Number.isFinite(n[k])&&n[k]>=0&&n[k]<=1000000))&&Number.isFinite(n.kcal)}
-export function validateMealSnapshots(list){if(!Array.isArray(list))throw new Error('Invalid meals');for(const m of list)if(typeof m.id!=='string'||!dateValid(m.date)||!validNutrition(m.nutritionSnapshot)||(m.servings!=null&&!positive(m.servings,1000))||(m.grams!=null&&!positive(m.grams)))throw new Error('Invalid meal')}
+export function validateMealSnapshots(list){if(!Array.isArray(list))throw new Error('Invalid meals');for(const m of list)if(typeof m.id!=='string'||!dateValid(m.date)||!validNutrition(m.nutritionSnapshot)||(m.servings!=null&&!positive(m.servings,1000))||(m.grams!=null&&!positive(m.grams))||(m.costSnapshotCny!=null&&(!Number.isFinite(m.costSnapshotCny)||m.costSnapshotCny<0||m.costSnapshotCny>1000000)))throw new Error('Invalid meal')}
 function validateRoutines(list){list.forEach(r=>{if(typeof r.id!=='string'||typeof r.name!=='string'||!Array.isArray(r.ex))throw new Error('Invalid routine');r.ex.forEach(e=>{if(typeof e.id!=='string'||!positive(e.sets,100)||!Number.isInteger(e.sets))throw new Error('Invalid exercise')})})}
 const forbidden = /^(apiKey|api_key|token|credential|credentials|authorization|secret|credentialCache)$/i
 export function withoutCredentials(value) {
@@ -18,6 +18,7 @@ export function migrateState(state, defaults) {
   next.schemaVersion=2
   next.xunlian={...emptyXunlian(),...(next.xunlian||{})}
   next.xunlian.profile={...emptyXunlian().profile,...next.xunlian.profile}
+  validatePlanningProfile(next.xunlian.profile)
   next.xunlian.ai={...emptyXunlian().ai,...next.xunlian.ai}
   if(!Array.isArray(next.xunlian.healthSamples)||next.xunlian.healthSamples.length>10000||next.xunlian.healthSamples.some(s=>!s||typeof s.id!=='string'||!['steps','heartRate','distance','calories','weight'].includes(s.dataType)||!Number.isFinite(s.value)||s.value<0||!Number.isFinite(Date.parse(s.startDate))||!Number.isFinite(Date.parse(s.endDate))))throw new Error('Invalid health samples')
   for(const key of ['routines','workouts','bodyweight','customEx']) if(!Array.isArray(next[key]))throw new Error('Invalid '+key)

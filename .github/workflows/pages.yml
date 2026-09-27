@@ -7,11 +7,6 @@
 name: Deploy demo to GitHub Pages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +23,7 @@ env:
 
 jobs:
   build:
+    if: vars.ALLOW_PUBLIC_DEMO == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

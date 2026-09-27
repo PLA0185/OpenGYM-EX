@@ -14,7 +14,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const localesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'locales')
-const files = readdirSync(localesDir).filter(f => f.endsWith('.js')).sort()
+// xunlian-zh is a Chinese feature overlay, not a twelfth standalone language.
+// Other languages deliberately retain their source-string fallback for this overlay.
+const files = readdirSync(localesDir).filter(f => /^[a-z]{2}\.js$/.test(f)).sort()
 
 if (!files.length) {
   console.error(`No locale files found in ${localesDir}`)
@@ -54,4 +56,12 @@ if (failed) {
   process.exit(1)
 }
 
+const {default:overlay}=await import(pathToFileURL(join(localesDir,'xunlian-zh.js')).href)
+for(const [key,value] of Object.entries(overlay)){
+  if(typeof value!=='string'||!value.trim())throw new Error('Empty Chinese feature translation: '+key)
+  const placeholders=s=>[...new Set(s.match(/\{\d+\}/g)||[])].sort().join(',')
+  if(placeholders(key)!==placeholders(value))throw new Error('Feature placeholder mismatch: '+key)
+}
+
 console.log(`${locales.size} locales, ${union.length} keys each — in sync.`)
+console.log(`Chinese feature overlay: ${Object.keys(overlay).length} strings checked; other languages use source fallback.`)

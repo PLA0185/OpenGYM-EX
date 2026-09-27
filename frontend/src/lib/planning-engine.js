@@ -1,6 +1,8 @@
 import { recipeNutrition, mealSnapshot, dailyTotals, clone, validateTarget, positive, NUTRIENTS, foodIndex } from './nutrition.js'
 import { applyProgram, validateProgram } from './programs.js'
 import { validateMealSnapshots } from './xunlian-state.js'
+import { requiredMealSlots } from './meal-slots.js'
+import { recipeCost,budgetRecipes } from './meal-cost.js'
 const allergenRules = {
   '花生': /peanut|花生/i, '坚果': /almond|walnut|pecan|cashew|hazelnut|pistachio|坚果|杏仁|核桃|腰果/i,
   '牛奶': /milk|cheese|yogurt|cream|butter(?!.*peanut)|牛奶|奶酪|酸奶|奶油/i,
@@ -15,22 +17,28 @@ export function exclusionTerms(profile) {
 }
 export function recipeAllowed(recipe, foods, profile) {
   const index=foodIndex(foods),text = [recipe.nameZh,recipe.nameEn,...recipe.ingredients.flatMap(i=>{const f=index.get(i.foodId);return [i.originalText,f?.nameZh,f?.nameEn,...(f?.allergens||[])]})].filter(Boolean).join(' ')
+  if(profile.dietStyle==='vegetarian'&&/chicken|beef|pork|turkey|fish|salmon|tuna|shrimp|crab|lobster|gelatin|鸡肉|鸡胸|牛肉|猪肉|鱼|虾|蟹|肉汤/i.test(text))return false
+  if(profile.dietStyle==='vegan'&&/chicken|beef|pork|turkey|fish|salmon|tuna|shrimp|crab|lobster|gelatin|\begg\b|milk|cheese|yogurt|honey|鸡蛋|蛋清|蛋黄|牛奶|酸奶|奶酪|蜂蜜|鸡肉|鸡胸|牛肉|猪肉|鱼|虾|蟹|肉汤/i.test(text))return false
+  if(Number.isFinite(profile.cookingMinutes)&&profile.cookingMinutes>0&&(!Number.isFinite(recipe.prepMinutes)||recipe.prepMinutes>profile.cookingMinutes))return false
   return !exclusionTerms(profile).some(term => allergenRules[term] ? allergenRules[term].test(term==='牛奶'?text.replace(/(?:peanut|almond|sunflower seed) butter/ig,''):text) : text.toLowerCase().includes(term.toLowerCase()))
 }
-export function eligibleRecipes(recipes, foods, profile) { return recipes.filter(r=>recipeNutrition(r,foods).complete && recipeAllowed(r,foods,profile)) }
+export function eligibleRecipes(recipes, foods, profile) { return budgetRecipes(recipes.filter(r=>recipeNutrition(r,foods).complete && recipeAllowed(r,foods,profile)),profile) }
 export function validateMeals(result, dates, recipes, foods, profile, target, uid, enforceTargets = true) {
   if (!Array.isArray(result.meals) || result.meals.length > 56) throw new Error('Invalid meals')
   const unique = new Set()
   const snapshots = result.meals.map(m=>{
     const key=m.date+'|'+m.slot, r=recipes.find(r=>r.id===m.recipeId)
     if (!dates.includes(m.date)||!['breakfast','lunch','dinner','snack','pre','post'].includes(m.slot)||unique.has(key)||!r||!positive(m.servings,20)||!recipeAllowed(r,foods,profile)) throw new Error('Invalid or excluded meal reference')
-    unique.add(key);return mealSnapshot(r,foods,m.servings,m.date,m.slot,uid())
+    unique.add(key);const cost=recipeCost(r,profile);return {...mealSnapshot(r,foods,m.servings,m.date,m.slot,uid()),costSnapshotCny:cost==null?null:cost*m.servings,costBasis:'user-entered CNY per100g; ingredients only'}
   })
   dates.forEach(date=>{
-    if (!['breakfast','lunch','dinner'].every(slot=>unique.has(date+'|'+slot)))throw new Error('Each day needs three main meals')
+    if (!requiredMealSlots(profile).every(slot=>unique.has(date+'|'+slot)))throw new Error('每天须包含所选餐数对应的餐次：'+requiredMealSlots(profile).join('、'))
     const n=dailyTotals(snapshots,date)
-    if(enforceTargets && target && (n.kcal==null||n.proteinG==null||Math.abs(n.kcal-target.kcal)>target.kcal*.2||Math.abs(n.proteinG-target.proteinG)>Math.max(20,target.proteinG*.3)))throw new Error('Daily energy must be within 20% and protein within 30% (minimum 20g tolerance) of the supplied target')
+    const day=snapshots.filter(m=>m.date===date)
+    if(enforceTargets&&profile.dailyBudgetCny>0&&day.every(m=>m.costSnapshotCny!=null)&&day.reduce((sum,m)=>sum+m.costSnapshotCny,0)>profile.dailyBudgetCny+.01)throw new Error(date+' 原料费用超过每日预算 '+profile.dailyBudgetCny+' 元。')
+    if(enforceTargets && target && (n.kcal==null||n.proteinG==null||Math.abs(n.kcal-target.kcal)>target.kcal*.2||Math.abs(n.proteinG-target.proteinG)>Math.max(20,target.proteinG*.3)))throw new Error(date+' 餐食合计 '+Math.round(n.kcal||0)+' kcal、蛋白质 '+Math.round(n.proteinG||0)+' g，与目标 '+target.kcal+' kcal / '+target.proteinG+' g 不符，请校准份数或更换食谱。')
   })
+  if(enforceTargets&&Number.isInteger(profile.repeatMeals)&&profile.repeatMeals>0){const counts={};for(const m of result.meals)counts[m.recipeId]=(counts[m.recipeId]||0)+1;if(Object.values(counts).some(n=>n>profile.repeatMeals))throw new Error('同一道菜出现次数超过每周重复上限 '+profile.repeatMeals+' 次，请更换部分菜谱。')}
   return snapshots
 }
 export function mealDifference(old, replacement) {

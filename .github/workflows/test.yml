@@ -8,6 +8,9 @@ on:
       - 'frontend/**'
       - 'api/**'
       - 'scripts/build-coach-library.mjs'
+      - 'scripts/data/**'
+      - 'scripts/howtocook-local*'
+      - 'data/**'
       - '.github/workflows/test.yml'
   push:
     branches: [main]
@@ -15,6 +18,9 @@ on:
       - 'frontend/**'
       - 'api/**'
       - 'scripts/build-coach-library.mjs'
+      - 'scripts/data/**'
+      - 'scripts/howtocook-local*'
+      - 'data/**'
       - '.github/workflows/test.yml'
   workflow_dispatch:
 
@@ -40,6 +46,12 @@ jobs:
         working-directory: frontend
       - run: npm test
         working-directory: frontend
+      - run: node scripts/data/validate-seed.mjs
+      - run: node --test scripts/howtocook-local.test.mjs
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - run: python scripts/data/test-hd-media.py
       # A broken import or bad JSX fails the build long before any test covers it.
       - run: npm run build
         working-directory: frontend
