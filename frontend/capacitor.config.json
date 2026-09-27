@@ -1,9 +1,10 @@
 {
   "appId": "app.xunlian.personal",
-  "appName": "动起",
+  "appName": "OpenGym EX",
   "webDir": "dist",
   "backgroundColor": "#0c0e12",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "auto"
   }
 }

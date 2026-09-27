@@ -1,0 +1,7 @@
+[
+  {"id":"china-fitness-2017","title":"全民健身指南","publisher":"国家体育总局","year":2017,"url":"https://www.sport.gov.cn/n315/n20067006/c20324479/content.html","summary":"包括有氧、力量、球类、传统体育和拉伸；从适合自己的运动量逐渐增加。中等力量负荷可采用每动作 3 组、10–20 次、组间休息 1–2 分钟。","application":"应用编排具体动作、训练日与初始试练重量；指南没有按年龄体重提供统一公斤数。"},
+  {"id":"china-weight-2024","title":"体重管理指导原则（2024年版）","publisher":"国家卫生健康委","year":2024,"url":"https://www.nhc.gov.cn/wjw/ylyjs/202412/b3d40e0141834897808ce6c9dce76a60/files/1736390749000_59785.pdf","summary":"先评估身体状况、既往疾病、饮食和运动能力，再制定个人体重管理方案；有氧配合抗阻训练，控制总能量并保证营养。","application":"面向医疗和体重管理，临床处方不能直接套用到所有用户。应用保持可编辑的温和减脂目标，不承诺快速减重。"},
+  {"id":"china-literacy-2024","title":"中国公民健康素养——基本知识与技能（2024年版）","publisher":"国家卫生健康委","year":2024,"url":"https://www.nhc.gov.cn/xcs/c100122/202405/f251e896a50a49ff8c632b4b3da93126/files/1734001844015_12363.pdf","summary":"成年人每周 150–300 分钟中等强度或 75–150 分钟高强度有氧，配合每周 2–3 次抗阻运动。","application":"用于一周活动目标参考，不把力量训练时长直接当作已完成有氧。"},
+  {"id":"military-strength-2021","title":"力量训练六注意","publisher":"解放军报 / 中国军网","year":2021,"url":"https://www.81.cn/jfjbmap/content/2021-05/26/content_290267.htm","summary":"力量训练应重视动作规范、合理负荷与恢复。","application":"公开军事体育参考；军人体能训练不作为普通新手的默认强度。"},
+  {"id":"military-progression-2025","title":"军体讲堂：科学助力新兵突破体能瓶颈","publisher":"中国军网","year":2025,"url":"https://www.81.cn/yw_208727/16383605.html","summary":"按照体能基础分阶段、渐进安排训练。","application":"用于解释循序渐进原则，不照搬军人考核指标。"}
+]

@@ -108,6 +108,7 @@ export default function Settings() {
 
     <Section title={t('Xunlian planning')}><Row title={t('Planning profile')} accessory="chevron" onClick={() => nav('/planning')} /><Row title={t('Nutrition')} accessory="chevron" onClick={() => nav('/nutrition')} /><Row title={t('Training programs')} accessory="chevron" onClick={() => nav('/programs')} /></Section>
     <DeepSeekSettings />
+    <Section title="数据接入"><Row title="心率与手机运动记录" accessory="chevron" onClick={()=>nav('/health')}/><Row title="HowToCook 在线菜谱" accessory="chevron" onClick={()=>nav('/kitchen')}/><Row title="重新填写运动基础" accessory="chevron" onClick={()=>nav('/onboarding')}/></Section>
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <SelectRow
@@ -217,7 +218,7 @@ export default function Settings() {
     </Section>}
 
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      动起 · 基于 openGym · {t('free & open source (AGPL v3)')}<br />
+      OpenGym EX · 基于 openGym · {t('free & open source (AGPL v3)')}<br />
       <a href="https://github.com/PLA0185/xunlian-2" target="_blank" rel="noopener">源码</a> · 动作文本: MIT · 素材: © Gym visual · USDA FDC · HowToCook (Unlicense)
     </div>
   </div>

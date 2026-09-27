@@ -79,11 +79,12 @@ export default function Home() {
 
   return <div className="narrow">
     <div className="hdr">
-      <div><h1>{user ? t('Hi {0}', user.name) : t('DongQi')}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+      <div><h1>{user ? t('Hi {0}', user.name) : 'OpenGym EX'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
     <NutritionHomeCard />
+    <div className="card"><h2>说一句，安排训练与饮食</h2><p className="sect-f">AI 先追问限制和忌口，再生成可编辑的个人方案。</p><Button variant="primary" onClick={()=>nav('/assistant')}>和 AI 教练聊聊</Button><Button onClick={()=>nav('/health')}>心率与运动数据</Button></div>
     <div className="card">
       <div className="row between" style={{ marginBottom: 8 }}>
         <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>

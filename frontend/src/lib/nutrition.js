@@ -58,11 +58,11 @@ export const localDate = (d = new Date()) => [d.getFullYear(), String(d.getMonth
 export function monday(date = localDate()) { const d = new Date(date + 'T12:00:00'); d.setDate(d.getDate() - (d.getDay()+6)%7); return localDate(d) }
 export function emptyXunlian() {
   return { schemaVersion: 1, revision: 0, profile: { goal: 'maintain', activity: 1.4, mealCount: 3, allergies: '', dislikedFoods: '', budget: '', equipment: '', limitations: '', trainingTime: '18:30', sleepSchedule: '', cookingAvailability: '' }, target: null,
-    foods: [], recipes: [], meals: [], logs: [], programs: [], exerciseAliases: {}, foodAliases: {}, favorites: [], drafts: [], proposals: [], snapshots: [], ai: { enabled: false, model: 'deepseek-flash' }, nutritionNeedsReview: false }
+    foods: [], recipes: [], meals: [], logs: [], programs: [], exerciseAliases: {}, foodAliases: {}, favorites: [], drafts: [], proposals: [], snapshots: [], healthSamples:[], healthLastSync:null, ai: { enabled: false, model: 'deepseek-flash' }, nutritionNeedsReview: false }
 }
 export const searchFood = (food, q) => [food.nameZh, food.nameEn, ...(food.aliasesZh||[]), ...(food.aliasesEn||[])].some(x => x?.toLowerCase().includes(q.toLowerCase().trim()))
 export function planningContext(S) {
   const x = S.xunlian || emptyXunlian(), bw = S.bodyweight?.at(-1)?.w
   return { ...x.profile, weightKg: bw == null ? x.profile.weightKg : S.unit === 'lb' ? bw * .45359237 : bw, target: x.target,
-    training: { week: S.week, routines: S.routines.map(r => ({ id: r.id, name: r.name, ex: r.ex })) }, revision: x.revision }
+    training: { week: S.week, routines: S.routines.map(r => ({ id: r.id, name: r.name, ex: r.ex.map(e=>({id:e.id,sets:e.sets,reps:e.reps,weight:e.weight,restSec:e.restSec,sec:e.sec,min:e.min,mode:e.mode,sg:e.sg})) })) }, revision: x.revision }
 }

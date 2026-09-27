@@ -30,7 +30,7 @@ try{
         if($LASTEXITCODE -ne 0){throw 'Web build failed'}
         & '.\android\gradlew.bat' -p '.\android' assembleRelease --console=plain
         if($LASTEXITCODE -ne 0){throw 'Release build failed'}
-        $target=Join-Path $taskRoot 'artifacts\DongQi-2.0.1-personal.apk'
+        $target=Join-Path $taskRoot 'artifacts\OpenGymEX-2.0.2-personal.apk'
         & (Join-Path $env:ANDROID_HOME 'build-tools\36.0.0\apksigner.bat') sign --ks $keyFile --ks-key-alias xunlian-personal --ks-pass env:XUNLIAN_SIGN_PASSWORD --key-pass env:XUNLIAN_SIGN_PASSWORD --out $target '.\android\app\build\outputs\apk\release\app-release-unsigned.apk'
         if($LASTEXITCODE -ne 0){throw 'APK signing failed'}
         & (Join-Path $env:ANDROID_HOME 'build-tools\36.0.0\apksigner.bat') verify --verbose --print-certs $target

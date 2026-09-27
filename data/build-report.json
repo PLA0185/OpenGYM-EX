@@ -1,1 +1,25 @@
-{"usdaRecords":{"FoundationFoods":363,"SRLegacyFoods":7793,"SurveyFoods":5432},"foodSeedRecords":13545,"preciselyTranslatedFoods":81,"howtocookCommit":"a2d45c6984dff9ee941da0e7c452f7965965d962","importedRecipes":373,"recipesWithImages":176,"verifiedPortionCombinations":8,"fullyMappedSourceRecipes":2,"unresolvedIngredients":2249,"foodSeedBytes":10459321,"recipeSeedBytes":1802699,"exerciseRecords":1324,"preciselyTranslatedExercises":15,"offlineExerciseMedia":2648,"validation":"PASS: structure and provenance; translations and source ingredient mapping incomplete","mediaLicenseStatus":"permission-pending; private development build","officialIndexedRecipes":1}
+{
+  "usdaRecords": {
+    "FoundationFoods": 363,
+    "SRLegacyFoods": 7793,
+    "SurveyFoods": 5432
+  },
+  "foodSeedRecords": 13545,
+  "preciselyTranslatedFoods": 81,
+  "howtocookCommit": "a2d45c6984dff9ee941da0e7c452f7965965d962",
+  "importedRecipes": 373,
+  "recipesWithImages": 176,
+  "verifiedPortionCombinations": 8,
+  "fullyMappedSourceRecipes": 2,
+  "unresolvedIngredients": 2249,
+  "foodSeedBytes": 10459321,
+  "recipeSeedBytes": 1802699,
+  "exerciseRecords": 1324,
+  "preciselyTranslatedExercises": 15,
+  "offlineExerciseMedia": 2648,
+  "validation": "PASS: structure and provenance; food translations and source ingredient mapping incomplete; exercise names curated",
+  "mediaLicenseStatus": "permission-pending; private development build",
+  "officialIndexedRecipes": 1,
+  "curatedExerciseNames": 1324,
+  "untranslatedExerciseNames": 0
+}

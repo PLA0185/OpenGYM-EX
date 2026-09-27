@@ -10,7 +10,7 @@ const allergenRules = {
 }
 export const ALLERGENS = Object.keys(allergenRules)
 export function exclusionTerms(profile) {
-  const free = [profile.allergies, profile.dislikedFoods].filter(Boolean).join('、').split(/[、,，;；\n/]+/).map(s=>s.trim().replace(/过敏|不能吃|不吃|忌口/g,'').trim()).filter(Boolean)
+  const free = [profile.allergies, profile.dislikedFoods].filter(Boolean).join('、').split(/[、,，;；\n/]+/).map(s=>s.trim().replace(/过敏|不能吃|不吃|忌口/g,'').trim()).filter(s=>s&&!/^(无|没有|无特殊|无忌口|none|no)$/i.test(s))
   return [...new Set([...(profile.excludedAllergens||[]),...free])]
 }
 export function recipeAllowed(recipe, foods, profile) {
@@ -46,8 +46,9 @@ export function applyJoint(S, proposal, choices, exercises, uid) {
     validateMealSnapshots(proposal.snapshots)
     if (!proposal.snapshots.length||!Array.isArray(proposal.dates)||proposal.snapshots.some(m=>!proposal.dates.includes(m.date)))throw new Error('Invalid meal proposal')
   }
-  const snap={kind:'joint',routines:clone(S.routines),week:clone(S.week),dayPlan:clone(S.dayPlan),programs:clone(S.xunlian.programs),target:clone(S.xunlian.target),meals:clone(S.xunlian.meals),at:Date.now()}
+  const snap={kind:'joint',routines:clone(S.routines),week:clone(S.week),dayPlan:clone(S.dayPlan),programs:clone(S.xunlian.programs),profile:clone(S.xunlian.profile),target:clone(S.xunlian.target),meals:clone(S.xunlian.meals),at:Date.now()}
   const oldSnapshots=clone(S.xunlian.snapshots)
+  if(choices.profile)S.xunlian.profile=clone(proposal.profile)
   if(choices.training) applyProgram(S,{...proposal.program,baseRevision:proposal.baseRevision},exercises,uid)
   if(choices.target)S.xunlian.target=clone(proposal.target)
   if(choices.meals){S.xunlian.meals=[...S.xunlian.meals.filter(m=>!proposal.dates.includes(m.date)),...clone(proposal.snapshots)];S.xunlian.nutritionNeedsReview=false}

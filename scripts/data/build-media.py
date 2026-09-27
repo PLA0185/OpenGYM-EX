@@ -32,4 +32,6 @@ with zipfile.ZipFile(raw) as z:
 result=dict(sourceVersion=commit,archiveSha256=checksum,licenseStatus='permission-pending; private development build',files=manifest)
 (ROOT/'frontend/public/media-manifest.json').write_text(json.dumps(result,ensure_ascii=False,separators=(',',':')),encoding='utf8')
 reportpath=ROOT/'data/build-report.json';report=json.loads(reportpath.read_text(encoding='utf8'));report['offlineExerciseMedia']=len(manifest);report['mediaLicenseStatus']=result['licenseStatus'];reportpath.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+# Restoring the original low-resolution archive must clear HD overrides.
+(ROOT/'frontend/src/data/exercise-hd.json').write_text('{}\n',encoding='utf8')
 print('Bundled',len(manifest),'media files;',sum(m['bytes'] for m in manifest),'bytes')

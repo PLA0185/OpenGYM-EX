@@ -1,0 +1,43 @@
+import { validateProgram,analyzeProgram } from './programs.js'
+import { recipeNutrition,clone } from './nutrition.js'
+export function coachCatalog(exercises,profile){
+  const avoids=String(profile.avoidExercises||'').split(/[、,，;；\n]+/).map(t=>t.trim().toLowerCase()).filter(s=>s&&!['无','没有','none'].includes(s))
+  const home=profile.trainingPlace==='home',equipment=home?new Set(['body weight',...(profile.homeEquipment||[])]):null
+  return exercises.filter(e=>(!equipment||equipment.has(e.eq))&&!avoids.some(term=>(e.nameZh+' '+(e.nameEn||e.n)).toLowerCase().includes(term))&&(!profile.lowImpact||!/jump|burpee|run|plyo|sprint|跳|跑/.test((e.nameEn+' '+e.nameZh).toLowerCase()))&&(!['inactive','occasional'].includes(profile.fitnessLevel)||!/guillotine|behind neck|planche|handstand|muscle.?up|iron cross|maltese|skin the cat|snatch|jerk|pistol|倒立|水平支撑|双力臂/.test((e.nameEn+' '+e.nameZh).toLowerCase())))
+}
+export function checkCoachProgram(program,candidates,profile){
+  validateProgram(program,candidates)
+  if(program.days.length!==profile.trainingDays)throw new Error('训练日数量与已确认的每周天数不一致。')
+  if(program.days.some(day=>!profile.availableDays.includes(day.weekday)))throw new Error('训练日安排在不可训练的星期。')
+  if(!Number.isFinite(profile.trainingDuration)||profile.trainingDuration<10||profile.trainingDuration>180)throw new Error('请设置 10–180 分钟的训练时间。')
+  if(analyzeProgram(program,candidates).days.some(day=>day.estimatedDuration>profile.trainingDuration+10))throw new Error('估算训练时长超过已确认时间，请减少动作或组数。')
+  return program
+}
+export function selectCoachCandidates(candidates){
+  const result=[],seen=new Set(),groups=new Map()
+  for(const e of candidates.filter(e=>e.translationSource==='manual'||e.custom)){result.push(e);seen.add(e.id)}
+  for(const e of candidates){const key=e.bp+'|'+e.eq,used=groups.get(key)||0;if(seen.has(e.id)||used>=8)continue;result.push(e);seen.add(e.id);groups.set(key,used+1)}
+  return result.slice(0,300)
+}
+// Give the model an actually feasible menu as evidence, rather than inventing nutrients.
+export function feasibleMenu(recipes,foods,target){
+  const candidates=recipes.slice(0,40).map(r=>({r,n:recipeNutrition(r,foods).nutrition})).filter(({n})=>n.kcal>0&&Number.isFinite(n.proteinG))
+  for(const a of candidates)for(const b of candidates)for(const c of candidates){
+    const parts=[a,b,c].map(({r,n},i)=>({recipeId:r.id,servings:Math.round(target.kcal*[.25,.35,.4][i]/n.kcal*100)/100,n}))
+    if(parts.some(p=>p.servings<.1||p.servings>20))continue
+    const kcal=parts.reduce((n,p)=>n+p.n.kcal*p.servings,0),protein=parts.reduce((n,p)=>n+p.n.proteinG*p.servings,0)
+    if(Math.abs(kcal-target.kcal)<=target.kcal*.2&&Math.abs(protein-target.proteinG)<=Math.max(20,target.proteinG*.3))return parts.map(({n,...p},i)=>({...p,slot:['breakfast','lunch','dinner'][i]}))
+  }
+  return null
+}
+export function mapCoachProgram(result,candidates,id,revision){
+  const program={...clone(result),id,sourceType:'ai-generated',sourceName:'AI 个人编排（候选动作库与指南参考）',originalText:'',baseRevision:revision,progression:'off'}
+  program.days=program.days.map(d=>({...d,exerciseItems:d.exerciseItems.map(item=>{
+    const matches=candidates.filter(e=>item.exerciseId?e.id===item.exerciseId:(e.nameZh===item.originalText||e.nameEn===item.originalText||e.n===item.originalText))
+    if(matches.length!==1)throw new Error('AI 使用了未提供或无法唯一确认的动作。')
+    // New generated loads are estimates, and must not override personal history.
+    const {weight:ignored,baselineWeight,baselineReps,...rest}=item
+    return {...rest,exerciseId:matches[0].id,mappingStatus:'exact',weight:null,estimatedFields:[...new Set([...(item.estimatedFields||[]),'sets','reps','restSec'])]}
+  })}))
+  return program
+}

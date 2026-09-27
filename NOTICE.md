@@ -84,3 +84,7 @@ Exercise media remains permission-pending. The owner has instructed personal dev
 packaging while procuring permission; no evidence of that permission has been supplied.
 The source license is retained in `data/EXERCISE_LICENSE.txt` and bundled in app notices.
 This does not change or imply a media redistribution license.
+
+## Selected higher-resolution exercise photos
+
+22 start/end photos for 11 manually matched exercises come from [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db), pinned at f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5, under the Unlicense. The complete license is bundled in notices/FREE-EXERCISE-DB.txt. These two-frame photographs are separate from the original Gymvisual animations.

@@ -1,4 +1,5 @@
 import { estimate1RM } from './onerm.js'
+import { initialLoad } from './initial-load.js'
 
 export const DEFAULT_REST_SEC = 90
 const validWeight = w => Number.isFinite(w) && w >= 0 && w <= 1000
@@ -29,6 +30,7 @@ export function resolvePrescription(S, item, exercise, program = {}) {
       if (max > 0) { weight = Math.floor(max * item.percent1RM / 100 * 2) / 2; basis = 'percent-history'; evidence = {date:baseline.date,weight:baseline.w,reps:baseline.r,estimated1RM:max,percent:item.percent1RM} }
     } else if (item.baselineWeight > 0) { weight = convert(item.baselineWeight,item.baselineUnit || unit,unit); basis = 'user-baseline' }
     else if (last?.w > 0) { weight = last.w; basis = 'history'; evidence = {date:last.date,weight:last.w,reps:last.r} }
+    if(weight==null&&item.percent1RM==null){const trial=initialLoad(S.xunlian?.profile,exercise,unit);if(trial){weight=trial.weight;basis='initial-trial';evidence={note:trial.note,fitnessLevel:S.xunlian.profile.fitnessLevel}}}
   }
   const restSec = item.restSec ?? DEFAULT_REST_SEC
   return {id:item.exerciseId,sets:item.sets,reps:item.reps ?? item.repsMax ?? item.repsMin ?? 0,repsMin:item.repsMin || 0,weight,

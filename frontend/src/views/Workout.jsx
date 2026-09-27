@@ -10,6 +10,7 @@ import { beep, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { api } from '../lib/api.js'
 import Media from '../components/Media.jsx'
+import HeartRateCard from '../components/HeartRateCard.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
@@ -117,7 +118,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     {last && <div className="small dim" style={{ marginBottom: 4 }}>{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
     <p className="sect-f">{t('Rest seconds')}: {restSeconds(entry,S.restSec)} s · {entry.target?.prefillBasis?.rest==='app-default'?t('App default'):entry.target?.prefillBasis?.rest==='accepted-ai'?t('Accepted AI adjustment'):t('Plan preset')}</p>
     {entry.target?.prefillBasis&&<p className="sect-f">{t('Source')}: {entry.target.prefillBasis.sourceName} · {t('Load basis '+entry.target.prefillBasis.load)}{entry.target.prefillBasis.evidence?.date&&' · '+entry.target.prefillBasis.evidence.date}</p>}
-    {entry.target?.prefillBasis?.load==='pending'&&<p className="notice">{t('Load needs a personal baseline. Enter a known working load once, then fill remaining sets. No weight has been guessed.')}</p>}
+    {entry.target?.prefillBasis?.load==='initial-trial'&&<p className="notice">{entry.target.prefillBasis.evidence?.note} 不合适请降低重量，首组确认后可预填其余组。</p>}{entry.target?.prefillBasis?.load==='pending'&&<p className="notice">{t('Load needs a personal baseline. Enter a known working load once, then fill remaining sets. No weight has been guessed.')}</p>}
     {entry.target?.prescription&&<p className="sect-f">{[['rpe','RPE'],['rir','RIR'],['percent1RM','% 1RM'],['tempo','节奏'],['notes','备注']].filter(([k])=>entry.target.prescription[k]!=null).map(([k,label])=>label+': '+entry.target.prescription[k]).join(' · ')}</p>}
     {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
@@ -255,6 +256,7 @@ function ActiveWorkout() {
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
+    <HeartRateCard/>
 
     {A.entries.length ? <>
       <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>

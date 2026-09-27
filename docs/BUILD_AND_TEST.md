@@ -1,6 +1,6 @@
 # 构建、运行与更新
 
-本次开发环境为 Windows x64，Node.js + Python 3，JDK 21，Android SDK 36，AGP 8.10.1，Gradle wrapper 8.14.3。默认 Android 工具位置为 `D:/DeepSeekHarnessData/jdk-21`、`D:/DeepSeekHarnessData/android-sdk`，脚本优先使用已设置的 JAVA_HOME、ANDROID_HOME。Node 和 Python 在 PATH。Electron 与 Android 插件的精确版本以 package-lock.json 为准；Android 要求最低 API 23。
+本次开发环境为 Windows x64，Node.js + Python 3，JDK 21，Android SDK 36，AGP 8.10.1，Gradle wrapper 8.14.3。默认 Android 工具位置为 `D:/DeepSeekHarnessData/jdk-21`、`D:/DeepSeekHarnessData/android-sdk`，脚本优先使用已设置的 JAVA_HOME、ANDROID_HOME。Node 和 Python 在 PATH。Electron 与 Android 插件的精确版本以 package-lock.json 为准；Android 要求最低 API 26。
 
 ## 数据与依赖
 
@@ -21,9 +21,9 @@ Set-Location ..
 pwsh -NoProfile -File scripts/build-release.ps1
 ```
 
-Windows：`artifacts/windows/DongQi-2.0.1-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/DongQi.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
+Windows：`artifacts/windows/OpenGymEX-2.0.2-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
 
-Android：`artifacts/DongQi-2.0.1-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.1-dev / versionCode 20001，最低 Android 6（API23）、target36。使用本项目生成的个人签名，已校验 APK v1/v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/DongQi-2.0.1-dev.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
+Android：`artifacts/OpenGymEX-2.0.2-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.2-dev / versionCode 20002，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/DongQi-2.0.1-dev.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
 
 Android 签名证书 SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。
 
@@ -61,3 +61,6 @@ Windows便携EXE包含大量离线媒体，启动前需解包。2.0.0采用嵌�
 训练资料库 → 导入 → 直接读取原文参数，可离线读取“杠铃卧推 40kg 3组×8次 休息120秒”。审核页检查数字、重量单位、训练日及来源全文，再应用到周计划。缺少组次须补全；只有负重基线缺失可保留待确认，但训练中不允许把空白负重勾选为完成。已有导入方案在下次开始训练时升级为来源优先，当前已开始的训练不被重建。
 
 复盘须启用并配置自己的DeepSeek Key。训练参数微调由近90天完成记录校验，人工采纳后才应用；源文件/历史实际值保持不变，可用复盘页撤销最近的方案改动。旧版主动启用的进阶策略仍可在动作配置中选择；新来源方案默认关闭旧进阶，避免未确认的历史策略覆盖导入数值。
+
+
+2.0.2 新增依赖：Capacitor BLE、Clipboard 与 Health 插件（精确版本见锁文件）。Health Connect 运行能力单独检测。高清来源锁定在 sources.lock.json，22 帧哈希在 exercise-hq-manifest.json；bootstrap 恢复素材与完整 Unlicense NOTICE，构建再次核验。

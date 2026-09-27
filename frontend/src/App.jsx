@@ -32,6 +32,10 @@ const WeeklyMeals=lazy(()=>import('./views/Nutrition.jsx').then(m=>({default:m.W
 const JointPlanning=lazy(()=>import('./views/JointPlanning.jsx'))
 import Programs from './views/Programs.jsx'
 import Planning, { WeeklyReview } from './views/Planning.jsx'
+import Onboarding from './views/Onboarding.jsx'
+const Kitchen=lazy(()=>import('./views/Kitchen.jsx'))
+const Health=lazy(()=>import('./views/Health.jsx'))
+const Assistant=lazy(()=>import('./views/Assistant.jsx'))
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -74,7 +78,7 @@ function Shell() {
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
         <Suspense fallback={<p className="sect-f">正在载入离线资料…</p>}>
-          {!authed ? <Login /> : (
+          {!authed ? <Login /> : !S.xunlian.profile.onboardingCompleted && !S.active ? <Onboarding/> : (
             <Routes>
               <Route path="/home" element={<Home />} />
               <Route path="/plan" element={<Plan />} />
@@ -85,6 +89,10 @@ function Shell() {
               <Route path="/library" element={<Library />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/nutrition" element={<Nutrition />} />
+              <Route path="/kitchen" element={<Kitchen />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/assistant" element={<Assistant />} />
+              <Route path="/onboarding" element={<Onboarding onDone={()=>navigate('/home')}/>} />
               <Route path="/nutrition/week" element={<WeeklyMeals />} />
               <Route path="/programs" element={<Programs />} />
               <Route path="/planning" element={<Planning />} />

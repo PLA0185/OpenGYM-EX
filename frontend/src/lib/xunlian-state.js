@@ -19,6 +19,7 @@ export function migrateState(state, defaults) {
   next.xunlian={...emptyXunlian(),...(next.xunlian||{})}
   next.xunlian.profile={...emptyXunlian().profile,...next.xunlian.profile}
   next.xunlian.ai={...emptyXunlian().ai,...next.xunlian.ai}
+  if(!Array.isArray(next.xunlian.healthSamples)||next.xunlian.healthSamples.length>10000||next.xunlian.healthSamples.some(s=>!s||typeof s.id!=='string'||!['steps','heartRate','distance','calories','weight'].includes(s.dataType)||!Number.isFinite(s.value)||s.value<0||!Number.isFinite(Date.parse(s.startDate))||!Number.isFinite(Date.parse(s.endDate))))throw new Error('Invalid health samples')
   for(const key of ['routines','workouts','bodyweight','customEx']) if(!Array.isArray(next[key]))throw new Error('Invalid '+key)
   for(const key of ['week','dayPlan']) if(!next[key] || typeof next[key]!=='object' || Array.isArray(next[key]))throw new Error('Invalid '+key)
   validateRoutines(next.routines)

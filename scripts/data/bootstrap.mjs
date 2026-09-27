@@ -13,4 +13,4 @@ writeFileSync(resolve(root,'data/raw/howtocook-commit.json'),JSON.stringify({sha
 const r=spawnSync('python',['-X','utf8',resolve(root,'scripts/data/build-seed.py')],{cwd:root,stdio:'inherit'})
 if(r.status!==0)process.exit(r.status||1)
 
-for(const file of ['build-media.py','build-references.py']){const r=spawnSync('python',['-X','utf8',resolve(root,'scripts/data',file)],{cwd:root,stdio:'inherit'});if(r.status!==0)process.exit(r.status||1)}
+for(const file of ['build-media.py','build-references.py','build-hq-media.py']){const r=spawnSync('python',['-X','utf8',resolve(root,'scripts/data',file)],{cwd:root,stdio:'inherit'});if(r.status!==0)process.exit(r.status||1)}

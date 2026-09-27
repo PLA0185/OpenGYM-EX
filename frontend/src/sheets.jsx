@@ -701,8 +701,10 @@ export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day
 /* ============================ workout detail ============================ */
 function WorkoutDetail({ w, close }) {
   const st = useStore(s => s.S)
+  const heart=w.heartRateSamples?.filter(s=>Number.isFinite(s.bpm)&&s.bpm>=25&&s.bpm<=240)||[]
   return <>
     <h3>{w.name}</h3>
+    {!!heart.length&&<Section title="训练心率" footer="来自已连接设备的广播样本；采样间隔约 10 秒，缺失时段不补值。"><Row title="平均心率" value={Math.round(heart.reduce((sum,s)=>sum+s.bpm,0)/heart.length)+' bpm'}/><Row title="最高心率" value={Math.max(...heart.map(s=>s.bpm))+' bpm'}/><Row title="样本数" value={heart.length}/></Section>}
     <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(w.vol, st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
     {w.entries.map((e, i) => {
       const ex = EXIDX[e.id]
@@ -939,7 +941,7 @@ function doFinishWorkout() {
     // finished workout cannot say whether it hit its reps, and a timed session reads back
     // as "0 reps". It is what the progression engine works from.
     entries: A.entries.map(e => ({ id: e.id, sets: e.sets, topW: e.topW || null, target: e.target || null })).filter(e => e.sets.some(s => s.done)),
-    prs
+    prs, heartRateSamples: A.heartRateSamples || []
   }
   w.vol = workoutVolume(w)
   update(s => {

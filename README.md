@@ -1,10 +1,12 @@
-# 动起 2.0（Windows / Android 阶段开发版）
+# OpenGym EX 2.0.2（Windows / Android 阶段开发版，名称待定）
 
 基于 openGym 保留训练引擎，新增离线营养、食谱、一周餐食、训练资料库与可选 DeepSeek 联合规划。本仓库是所有者的私有开发和备份仓库，保留上游历史与 AGPL 许可。下方保留上游说明；本项目的当前行为与命令以本段及 docs 为准。
 
-- [V6 双端执行任务书](docs/动起2.0_V6_双端执行任务书.md)
+- [V7 双端执行任务书](docs/OpenGymEX_2.0_V7_双端执行任务书.md)
+- [V6 历史任务书](docs/动起2.0_V6_双端执行任务书.md)
 - [构建、运行与更新](docs/BUILD_AND_TEST.md)
 - [当前交付状态与缺口](docs/DELIVERY_STATUS.md)
+- [整库高清素材接入](docs/HD_MEDIA_IMPORT.md)
 - [数据来源与授权记录](docs/DATA_SOURCES.md)
 - [DeepSeek 协议与凭据存储](docs/AI_PROVIDER_DEEPSEEK.md)
 
@@ -23,7 +25,7 @@ pwsh -NoProfile -File scripts/build-release.ps1
 node scripts/verify-windows.mjs
 ```
 
-App 产物在 `artifacts/`。源码及整理后的种子数据进入 Git；依赖、构建产物、原始大数据、个人状态、媒体文件与签名私钥不进入 Git。固定来源和 SHA-256 可重建媒体。详细复现条件、已知缺口及签名密钥备份说明见上述文档。
+App 产物在 `artifacts/`。源码及整理后的种子数据进入 Git；依赖、构建产物、原始大数据、个人状态、原始动作媒体与签名私钥不进入 Git；22 张 Unlicense 高清照片随源码保存。固定来源和 SHA-256 可重建媒体。详细复现条件、已知缺口及签名密钥备份说明见上述文档。
 
 ---
 

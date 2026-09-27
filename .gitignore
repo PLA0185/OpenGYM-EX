@@ -44,3 +44,7 @@ frontend/public/img/
 frontend/public/gif/
 .private-signing/
 frontend/public/notices/
+
+!data/FREE_EXERCISE_DB_LICENSE.txt
+
+__pycache__/

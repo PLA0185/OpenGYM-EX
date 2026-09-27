@@ -541,6 +541,11 @@ h4.sec{
    at 180px you had to scroll a full screen between two exercises done back-to-back */
 .exmedia.compact img{height:120px}
 .exmedia.mini img{height:84px}
+.exmedia.original-resolution img{width:180px;max-width:100%;height:180px;margin:0 auto}
+.exmedia.original-resolution{padding:12px 0 34px}
+.exmedia .media-source{position:absolute;top:6px;left:6px;display:flex;gap:8px;align-items:center;max-width:calc(100% - 12px);padding:4px 6px;background:rgba(0,0,0,.65);color:white;border-radius:6px;font-size:11px;flex-wrap:wrap}
+.exmedia .media-source button{padding:5px;background:rgba(255,255,255,.15);border-radius:4px;color:white}
+.exmedia.original-resolution.mini img{width:84px;height:84px}
 
 .sethead{
   display:flex;align-items:center;gap:8px;padding:0 0 6px;
@@ -891,7 +896,17 @@ h4.sec{
 .cols{display:block}
 .recipe-cover{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:var(--r-card);margin:12px 0}
 .lrow .field{max-width:190px;min-width:0}
-.card label .num{display:block;width:70px;max-width:100%;margin-top:4px}
+.card label .num{display:block;width:100%;max-width:100%;margin-top:6px}
+html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="light"]{color-scheme:light}
+input.num{background:var(--surface-2);color:var(--label);-webkit-text-fill-color:var(--label);border:1px solid var(--sep);border-radius:8px;min-height:44px;padding:8px;max-width:100%;width:100%;font-size:16px;caret-color:var(--acc)}
+.stp input.num{min-height:0;padding:0;border:none;background:none}
+.prescription-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin:12px 0}
+.prescription-grid label{min-width:0;line-height:1.4}
+.lrow-t,.lrow-s,.item .ss{word-break:normal;overflow-wrap:normal;text-wrap:pretty}
+.lrow:has(>.field),.lrow:has(>input.num){flex-wrap:wrap}
+.lrow>.field,.lrow>input.num{flex:1 1 140px;max-width:190px}
+.lrow:has(>.field) .lrow-m,.lrow:has(>input.num) .lrow-m{min-width:110px}
 .narrow>.field,.sheet>.field{margin:8px 0}
 .notice{padding:12px;border-radius:var(--r);background:var(--acc-soft);color:var(--label-2);font-size:14px;line-height:1.5}
 @media (min-width:1000px){
