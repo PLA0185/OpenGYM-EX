@@ -46,7 +46,7 @@ Windows报告：`artifacts/verification-windows.json`。Android报告：`artifac
 
 Android包名 `app.xunlian.personal`，min26 / target36，原证书SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。Windows个人数据目录仍为AppData/Xunlian；没有Windows发布者签名，不把它描述为已签名商业发行版。
 
-[私人仓库](https://github.com/PLA0185/xunlian-2)保存源码；名为“OpenGym EX 2.0.4 私人开发与换机备份”的草稿Release、标记 `phase-2.0.4` 保存安装包、锁定原始来源缓存、样例、加密签名与校验报告。登录同一GitHub账号查看，或按换机说明用gh下载。`SHA256SUMS.txt`与GitHub资产digest可交叉核对。
+[私人仓库](https://github.com/PLA0185/xunlian-2)保存源码；[“OpenGym EX 2.0.4 私人开发与换机备份”阶段Release](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.4)、标记 `phase-2.0.4` 保存安装包、锁定原始来源缓存、样例、加密签名与校验报告。登录同一GitHub账号查看，或按换机说明用gh下载。`SHA256SUMS.txt`与GitHub资产digest可交叉核对。
 
 ## 没有冒充完成的内容
 

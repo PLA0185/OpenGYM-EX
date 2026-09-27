@@ -29,7 +29,7 @@ pwsh -NoProfile -File scripts/build-release.ps1
 node scripts/verify-windows.mjs
 ```
 
-App 产物在 `artifacts/`。源码及整理后的种子数据进入 Git；依赖、构建产物、原始大数据、个人状态、原始动作媒体与签名私钥不进入 Git；22 张 Unlicense 高清照片随源码保存。固定来源和 SHA-256 可重建媒体。原始来源缓存、双端安装包、样例与加密签名备份已保存到私人 phase-2.0.4 草稿 Release；换机须另带旧电脑的恢复口令。详细复现条件和真实验收缺口见上述文档。
+App 产物在 `artifacts/`。源码及整理后的种子数据进入 Git；依赖、构建产物、原始大数据、个人状态、原始动作媒体与签名私钥不进入 Git；22 张 Unlicense 高清照片随源码保存。固定来源和 SHA-256 可重建媒体。原始来源缓存、双端安装包、样例与加密签名备份已保存到私人 phase-2.0.4 阶段 Release；换机须另带旧电脑的恢复口令。详细复现条件和真实验收缺口见上述文档。
 
 ---
 
