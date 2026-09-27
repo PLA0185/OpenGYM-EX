@@ -1,9 +1,10 @@
 import { EXDB } from './exercises-data.js'
 import { t } from './i18n.js'
+import names from '../data/exercise-names.json'
 
 export { EXDB }
 export const EXIDX = {}
-EXDB.forEach(e => { EXIDX[e.id] = e })
+EXDB.forEach(e => { Object.assign(e, names[e.id] || { nameEn: e.n, nameZh: e.n }); EXIDX[e.id] = e })
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 
 // Equipment options present in a given list of exercises, most common first (issue #6).
@@ -21,10 +22,12 @@ let customIds = []
 export function registerCustom(list) {
   customIds.forEach(id => delete EXIDX[id])
   customIds = (list || []).map(e => e.id)
-  ;(list || []).forEach(e => { EXIDX[e.id] = e })
+  ;(list || []).forEach(e => { EXIDX[e.id] = { ...e, nameZh: e.nameZh || e.n, nameEn: e.nameEn || '' } })
 }
 // Full searchable catalogue — customs first so your own exercises are easy to find.
-export const allExercises = st => [...(st.customEx || []), ...EXDB]
+export const allExercises = st => [...(st.customEx || []).map(e => EXIDX[e.id] || e), ...EXDB]
+export const exerciseName = ex => ex ? (ex.nameZh && ex.nameZh !== (ex.nameEn || ex.n) ? ex.nameZh + ' · ' + (ex.nameEn || ex.n || '') : ex.n) : ''
+export const exerciseMatches = (e, q) => [e.n, e.nameEn, e.nameZh, ...(e.aliasesZh || []), ...(e.aliasesEn || [])].some(n => n?.toLowerCase().includes(q))
 
 // Media normally sits next to the app (img/ and gif/, mounted into the web container).
 // A build can point them somewhere else — the demo build pulls them off a CDN instead of

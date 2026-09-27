@@ -67,3 +67,20 @@ and are **not** covered by openGym's AGPL license — they remain under that dat
 The media files are not distributed in this repository; they are downloaded from the upstream
 source on first run. If you redistribute openGym with the media included, review the upstream
 license first.
+
+## Xunlian 2.0 additions
+
+This private development fork preserves openGym and its AI Coach history and AGPL terms.
+Food records are normalized from USDA FoodData Central public data; source IDs, release
+versions and original names are retained. HowToCook recipes and images use its Unlicense
+(included as `data/HOWTOCOOK_LICENSE.txt`). Additional recipe steps and meal combinations
+are written for Xunlian; source provenance is in `docs/DATA_SOURCES.md`.
+
+The six selected 2024 Adult Compendium activity MET values retain the published codes
+and values, with attribution in `data/activity-reference.json`. Guideline principles
+are attributed to CDC; Xunlian writes the actual training arrangement.
+
+Exercise media remains permission-pending. The owner has instructed personal development
+packaging while procuring permission; no evidence of that permission has been supplied.
+The source license is retained in `data/EXERCISE_LICENSE.txt` and bundled in app notices.
+This does not change or imply a media redistribution license.

@@ -1,0 +1,13 @@
+[
+  {
+    "id":"usda-indexed-breakfast-smoothie","nameZh":"早餐果蔬奶昔（USDA 页面收录）","nameEn":"Breakfast Smoothie","servings":2,"servingsBasis":"source-explicit","source":"Nutrition.gov / University of Illinois Extension","sourceType":"official-indexed-partner","sourceUrl":"https://www.nutrition.gov/recipes/breakfast-smoothie","originalTitle":"Breakfast Smoothie","sourceRelease":"checked-2026-09-27","license":"Ingredient facts and original Chinese paraphrase; no source photo included; credited partner recipe, not a USDA-authored recipe","revision":1,"verified":false,"tags":["早餐","奶昔","Breakfast"],
+    "ingredients":[
+      {"foodId":"fdc-171269","originalText":"1 cup milk (low fat or fat free)","grams":245,"estimated":false,"mappingStatus":"user-resolved","conversionBasis":"FDC 171269, 1 cup = 245g, fat-free milk variant"},
+      {"foodId":"fdc-173944","originalText":"1 medium banana (sliced)","grams":118,"estimated":false,"mappingStatus":"user-resolved","conversionBasis":"FDC 173944, medium banana edible portion = 118g"},
+      {"foodId":"fdc-173950","originalText":"1 cup frozen fruit (such as blueberries)","grams":155,"estimated":false,"mappingStatus":"user-resolved","conversionBasis":"FDC 173950, 1 cup unthawed unsweetened blueberries = 155g; selected source-permitted fruit variant"},
+      {"foodId":"fdc-172470","originalText":"2 tablespoons peanut butter (or sunflower seed butter)","grams":32,"estimated":false,"mappingStatus":"user-resolved","conversionBasis":"FDC 172470: portion amount 2 tbsp = 32g; selected peanut butter variant"},
+      {"foodId":"fdc-168462","originalText":"1 handful spinach (loose leaves)","grams":30,"estimated":true,"mappingStatus":"user-resolved","conversionBasis":"One handful interpreted as approximately one loose cup; FDC cup = 30g, review actual amount"}
+    ],
+    "steps":["先清洗双手、香蕉及菠菜等原料。","剥好香蕉并切片，将所有材料放入搅拌机。","搅打成均匀奶昔，分成两份后食用。"],"notes":"保留原方的 2 份产量。按所选 USDA 食材重新计算营养；一把菠菜的克数为明确估算，未引用原站图片或宣称原方营养已验证。"
+  }
+]

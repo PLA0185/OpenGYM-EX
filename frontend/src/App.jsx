@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -27,6 +27,11 @@ import Admin from './views/Admin.jsx'
 import Coach from './views/Coach.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
 import CoachProposal from './views/CoachProposal.jsx'
+const Nutrition=lazy(()=>import('./views/Nutrition.jsx'))
+const WeeklyMeals=lazy(()=>import('./views/Nutrition.jsx').then(m=>({default:m.WeeklyMeals})))
+const JointPlanning=lazy(()=>import('./views/JointPlanning.jsx'))
+import Programs from './views/Programs.jsx'
+import Planning, { WeeklyReview } from './views/Planning.jsx'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -68,6 +73,7 @@ function Shell() {
           re-mounts the boundary, so the tab bar is always a way out */}
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
+        <Suspense fallback={<p className="sect-f">正在载入离线资料…</p>}>
           {!authed ? <Login /> : (
             <Routes>
               <Route path="/home" element={<Home />} />
@@ -78,6 +84,12 @@ function Shell() {
               <Route path="/history" element={<History />} />
               <Route path="/library" element={<Library />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/nutrition" element={<Nutrition />} />
+              <Route path="/nutrition/week" element={<WeeklyMeals />} />
+              <Route path="/programs" element={<Programs />} />
+              <Route path="/planning" element={<Planning />} />
+              <Route path="/joint" element={<JointPlanning />} />
+              <Route path="/review" element={<WeeklyReview />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}
@@ -88,6 +100,7 @@ function Shell() {
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           )}
+        </Suspense>
         </ErrorBoundary>
       </div>
       <TabBar onStart={startFlow} />

@@ -1,0 +1,58 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useStore } from '../store/useStore.js'
+import { useUI } from '../store/useUI.js'
+import { t } from '../lib/i18n.js'
+import { targets, planningContext, validateTarget, clone, dateKeys, monday, localDate } from '../lib/nutrition.js'
+import { createDeepSeek, MODELS } from '../lib/deepseek.js'
+import { getCredential, setCredential, clearCredential } from '../lib/credentials.js'
+import { weeklyEvidence } from '../lib/programs.js'
+import { Section, Row, TextField, TextArea, NumberField, SelectRow, Button, Switch } from '../components/ui.jsx'
+import Icon from '../components/Icon.jsx'
+import { useAIRequest } from '../lib/useAIRequest.js'
+import { ALLERGENS } from '../lib/planning-engine.js'
+export function DeepSeekSettings() {
+  const S=useStore(s=>s.S),update=useStore(s=>s.update),[key,setKey]=useState(''),[exists,setExists]=useState(false),{busy,run:runAI,cancel}=useAIRequest(),[notice,setNotice]=useState('')
+  useEffect(()=>{getCredential().then(v=>setExists(!!v)).catch(()=>setNotice(t('Secure storage unavailable')))},[])
+  const run=fn=>runAI(async signal=>{setNotice('');try{await fn(signal)}catch(e){setNotice(t('AI error: {0}',t('AI '+(e.code||'credential'))))}})
+  return <Section title="DeepSeek AI" footer={t('Optional online feature. API key is excluded from data and backups. Browser keys last only for this session.')}>
+    <Row title={t('Enable AI')} subtitle={t('When used, necessary profile and input text are sent to DeepSeek.')}><Switch checked={S.xunlian.ai.enabled} onChange={v=>update(s=>{s.xunlian.ai.enabled=v})}/></Row>
+    <SelectRow title={t('Model')} value={S.xunlian.ai.model} onChange={v=>update(s=>{s.xunlian.ai.model=v})} options={MODELS.map(value=>({value,label:value}))}/>
+    <Row title={t('Credential')} value={t(exists?'Configured':'Not configured')}/><TextField type="password" autoComplete="off" placeholder={t('Enter API key')} value={key} onChange={e=>setKey(e.target.value)}/>
+    <div className="row" style={{gap:8,flexWrap:'wrap'}}><Button disabled={busy||!key.trim()} onClick={()=>run(async()=>{const mode=await setCredential(key.trim());setKey('');setExists(true);setNotice(t(mode==='session'?'Saved for this session':'Saved in secure storage'))})}>{t('Save credential')}</Button><Button disabled={busy} onClick={()=>run(async signal=>{await createDeepSeek({credential:getCredential,model:S.xunlian.ai.model}).healthCheck(signal);setNotice(t('Connection successful'))})}>{t('Test connection')}</Button><Button disabled={busy} variant="danger" onClick={()=>run(async()=>{await clearCredential();setExists(false);setKey('');setNotice(t('Credential cleared'))})}>{t('Clear credential')}</Button></div>
+    {busy&&<Button onClick={cancel}>{t('Cancel request')}</Button>}{notice&&<p className="sect-f">{notice}</p>}
+  </Section>
+}
+export default function Planning() {
+  const S=useStore(s=>s.S),update=useStore(s=>s.update),nav=useNavigate(),toast=useUI(s=>s.toast),[profile,setProfile]=useState(clone(S.xunlian.profile)),[target,setTarget]=useState(S.xunlian.target||{kcal:2200,proteinG:120,fatG:60,carbsG:295}),[error,setError]=useState('')
+  const change=(k,v)=>setProfile({...profile,[k]:v})
+  const save=()=>{try{validateTarget(target);update(s=>{s.xunlian.profile=profile;s.xunlian.target=target;s.xunlian.revision++});toast(t('Profile saved'))}catch(e){setError(t('Complete a valid nutrition target'))}}
+  return <div className="narrow"><div className="hdr"><button className="iconbtn" onClick={()=>nav('/nutrition')}><Icon name="chevronLeft"/></button><h1>{t('Planning profile')}</h1></div>
+  <Section title={t('Body and goals')} footer={t('Latest body weight is shared with training. Calculated targets are estimates and can be edited.')}>
+  <SelectRow title={t('Goal')} value={profile.goal} onChange={v=>change('goal',v)} options={[['maintain','Maintain weight'],['lose','Lose weight'],['gain','Gain weight']].map(([value,label])=>({value,label:t(label)}))}/>
+  <SelectRow title={t('Sex for BMR equation')} value={profile.sex||''} onChange={v=>change('sex',v)} options={[['','Not set'],['male','Male'],['female','Female']].map(([value,label])=>({value,label:t(label)}))}/>
+  {[['age','Age'],['heightCm','Height (cm)'],['weightKg','Fallback weight (kg)'],['targetWeightKg','Target weight (kg)']].map(([key,label])=><Row key={key} title={t(label)}><NumberField nullable value={profile[key]} onChange={v=>change(key,v)}/></Row>)}
+  <SelectRow title={t('Activity factor')} value={profile.activity} onChange={v=>change('activity',v)} options={[1.2,1.4,1.6,1.8].map(value=>({value,label:String(value)}))}/>
+  <Row title={t('Special diet / pregnancy / medical constraints')}><Switch checked={profile.specialDiet} onChange={v=>change('specialDiet',v)}/></Row></Section>
+  <Section title={t('Training and lifestyle')}>
+  {ALLERGENS.map(a=><Row key={a} title={a+' · '+t('Exclude ingredient')}><Switch checked={(profile.excludedAllergens||[]).includes(a)} onChange={v=>change('excludedAllergens',v?[...(profile.excludedAllergens||[]),a]:(profile.excludedAllergens||[]).filter(x=>x!==a))}/></Row>)}
+  {[['trainingExperience','Training experience'],['trainingGoal','Training goal'],['equipment','Available equipment'],['limitations','Injuries or limitations'],['cookingAvailability','Cooking availability and tools'],['allergies','Allergies / excluded foods'],['dislikedFoods','Disliked foods'],['preferences','Food preferences'],['budget','Budget'],['sleepSchedule','Sleep schedule'],['workSchedule','Work schedule']].map(([key,label])=><Row key={key} title={t(label)}><TextField value={profile[key]||''} onChange={e=>change(key,e.target.value)}/></Row>)}
+  <Row title={t('Training time')}><TextField type="time" value={profile.trainingTime||'18:30'} onChange={e=>change('trainingTime',e.target.value)}/></Row>
+  {[['trainingDays','Training days per week'],['trainingDuration','Session minutes'],['mealCount','Meals per day'],['repeatMeals','Acceptable repeated meals']].map(([key,label])=><Row key={key} title={t(label)}><NumberField nullable value={profile[key]} onChange={v=>change(key,v)}/></Row>)}</Section>
+  <Section title={t('Nutrition target')} footer={target.basis?`BMR ${target.bmr} · TDEE ${target.tdee} · ${target.basis}`:t('Manual target')}>
+  {[['kcal','Energy'],['proteinG','Protein'],['fatG','Fat'],['carbsG','Carbs']].map(([key,label])=><Row key={key} title={t(label)}><NumberField value={target[key]} onChange={v=>setTarget({...target,[key]:v,basis:'manual'})}/></Row>)}
+  <Button onClick={()=>{try{setError('');setTarget(targets(profile,planningContext({...S,xunlian:{...S.xunlian,profile}}).weightKg))}catch(e){setError(t('Complete adult age, height, sex and weight, or use manual targets.'))}}}>{t('Calculate suggested targets')}</Button></Section>
+  {error&&<p className="notice">{error}</p>}<Button variant="primary" onClick={save}>{t('Save profile and targets')}</Button><Button onClick={()=>nav('/joint')}>{t('Joint weekly planning')}</Button><DeepSeekSettings/></div>
+}
+export function WeeklyReview() {
+  const S=useStore(s=>s.S),update=useStore(s=>s.update),nav=useNavigate(),{busy,run:runAI,cancel}=useAIRequest(),[error,setError]=useState(''),[result,setResult]=useState(null),[decisions,setDecisions]=useState({})
+  const generate=()=>runAI(async signal=>{setError('');try{if(!S.xunlian.ai.enabled)throw new Error('credential');const date=new Date();date.setDate(date.getDate()-6);const data=await createDeepSeek({credential:getCredential,model:S.xunlian.ai.model}).generateStructured('review',weeklyEvidence(S,dateKeys(localDate(date))),{signal});setResult({...data,baseRevision:S.xunlian.revision});setDecisions({});update(s=>{s.xunlian.proposals.unshift({...data,baseRevision:S.xunlian.revision,createdAt:Date.now()});s.xunlian.proposals=s.xunlian.proposals.slice(0,10)})}catch(e){setError(t('AI error: {0}',t('AI '+(e.code||'input'))))}})
+  const apply=()=>{try{if(result.baseRevision!==S.xunlian.revision)throw new Error(t('Plan changed; generate a new proposal'));const accepted=result.suggestions.filter((_,i)=>decisions[i]==='accept');if(!accepted.length)return
+    accepted.forEach(a=>{if(a.action==='target')validateTarget(a.target);if(a.action==='sets'&&(!S.routines.some(r=>r.id===a.routineId&&r.ex.some(e=>e.id===a.exerciseId))||!Number.isInteger(a.sets)||a.sets<1||a.sets>20))throw new Error(t('Invalid proposal references'))})
+    update(s=>{s.xunlian.snapshots.unshift({kind:'joint',routines:clone(s.routines),week:clone(s.week),target:clone(s.xunlian.target),meals:clone(s.xunlian.meals),at:Date.now()});s.xunlian.snapshots=s.xunlian.snapshots.slice(0,3);accepted.forEach(a=>{if(a.action==='target')s.xunlian.target=a.target;if(a.action==='sets'){s.routines.find(r=>r.id===a.routineId).ex.find(e=>e.id===a.exerciseId).sets=a.sets;s.xunlian.nutritionNeedsReview=true}});s.xunlian.revision++});setResult(null)
+  }catch(e){setError(e.message)}}
+  const undo=()=>{const snap=S.xunlian.snapshots[0];if(!snap)return;update(s=>{if(snap.routines)s.routines=clone(snap.routines);if(snap.week)s.week=clone(snap.week);if(snap.dayPlan)s.dayPlan=clone(snap.dayPlan);if(snap.programs)s.xunlian.programs=clone(snap.programs);if(snap.meals)s.xunlian.meals=clone(snap.meals);if(Object.hasOwn(snap,'target'))s.xunlian.target=clone(snap.target);s.xunlian.snapshots.shift();s.xunlian.revision++;s.xunlian.nutritionNeedsReview=true})}
+  return <div className="narrow"><div className="hdr"><button className="iconbtn" onClick={()=>nav('/nutrition')}><Icon name="chevronLeft"/></button><h1>{t('Weekly review')}</h1></div><p className="sect-f">{t('Review shares the last 7 days of training, food logs, recent weight and necessary profile. Suggestions never change plans automatically.')}</p><Button variant="primary" disabled={busy} onClick={generate}>{t(busy?'Analyzing…':'Generate weekly review')}</Button>{busy&&<Button onClick={cancel}>{t('Cancel request')}</Button>}{error&&<p className="notice">{error}</p>}
+  {result&&<><Section title={t('Review proposal')} footer={result.summary}>{result.suggestions.map((a,i)=><div key={i} className="card"><h3>{a.title}</h3><p className="muted">{a.reason}</p><p className="sect-f">{t(a.domain)} · {a.action==='sets'?a.sets+' '+t('Sets'):a.action==='target'?a.target?.kcal+' kcal':t('Suggestion only')}</p><Button variant={decisions[i]==='accept'?'primary':'plain'} onClick={()=>setDecisions({...decisions,[i]:'accept'})}>{t('Accept')}</Button><Button onClick={()=>setDecisions({...decisions,[i]:'reject'})}>{t('Reject')}</Button></div>)}</Section><Button variant="primary" disabled={result.baseRevision!==S.xunlian.revision||!!S.active} onClick={apply}>{t('Apply selected suggestions')}</Button></>}
+  <Section title={t('Saved reviews')}>{S.xunlian.proposals.filter(p=>p.kind!=='joint').map((p,i)=><Row key={i} title={new Date(p.createdAt).toLocaleDateString()} subtitle={p.summary} onClick={()=>{setResult(p);setDecisions({})}}/>)}</Section><Button disabled={!S.xunlian.snapshots.length||!!S.active} onClick={undo}>{t('Undo latest plan change')}</Button></div>
+}

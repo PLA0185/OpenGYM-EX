@@ -3,6 +3,7 @@ import { imgSrc, gifSrc } from '../lib/exercises.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
+const mediaAvailable = import.meta.env.VITE_MOBILE !== '1' || import.meta.env.VITE_OFFLINE_MEDIA === 'bundled'
 
 // Big autoplaying animation; tap toggles to the still frame. `compact` shrinks it (superset cards).
 // Custom exercises have no media — the animation stays blank by design (issue #11).
@@ -14,6 +15,7 @@ export default function Media({ ex, id, compact, minimizable }) {
   const gifSize = useStore(s => s.S.gifSize)
   const update = useStore(s => s.update)
   if (!ex.gif) return null
+  if (!mediaAvailable) return <p className="sect-f">{t('Offline exercise animation pending media license; text instructions are available.')}</p>
   const mini = minimizable && gifSize === 'mini'
   const toggleSize = e => { e.stopPropagation(); update(s => { s.gifSize = mini ? 'full' : 'mini' }) }
   return (
@@ -34,6 +36,6 @@ export default function Media({ ex, id, compact, minimizable }) {
 }
 
 export function Thumb({ ex }) {
-  if (!ex.img) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
+  if (!ex.img || !mediaAvailable) return <div className="thumb thumb-x"><Icon name="dumbbell" /></div>
   return <img className="thumb" loading="lazy" decoding="async" src={imgSrc(ex)} alt="" />
 }

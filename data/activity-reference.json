@@ -1,0 +1,15 @@
+{
+  "release": "2024 Adult Compendium",
+  "sourceUrl": "https://pacompendium.com/conditioning-exercise/",
+  "usageUrl": "https://pacompendium.com/",
+  "checkedAt": "2026-09-27",
+  "usage": "Website permits free personal/commercial use with citation. Preserve activity codes and METs; these are estimates for adults, not individual measurements.",
+  "activities": [
+    {"code":"02054","met":3.5,"nameZh":"抗阻，多动作、8–15 次、不同阻力","nameEn":"Resistance (weight) training, multiple exercises, 8-15 reps at varied resistance"},
+    {"code":"02050","met":6.0,"nameZh":"抗阻训练，高强度","nameEn":"Resistance (weight lifting), power lifting or body building, vigorous effort"},
+    {"code":"02035","met":5.0,"nameZh":"循环训练，中等强度","nameEn":"Circuit training, moderate effort"},
+    {"code":"02040","met":7.5,"nameZh":"循环训练，高强度、少休息","nameEn":"Circuit training, including kettlebells, some aerobic movement with minimal rest, general, vigorous intensity"},
+    {"code":"02056","met":3.0,"nameZh":"徒手抗阻训练，一般强度","nameEn":"Body weight resistance exercises, general"},
+    {"code":"02057","met":6.5,"nameZh":"徒手抗阻训练，高强度","nameEn":"Body weight resistance exercises, high intensity"}
+  ]
+}

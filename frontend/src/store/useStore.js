@@ -4,10 +4,13 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { emptyXunlian } from '../lib/nutrition.js'
+import { migrateState, withoutCredentials } from '../lib/xunlian-state.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'en',
+  schemaVersion: 2, xunlian: emptyXunlian(),
+  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'zh',
   theme: 'dark', accent: 'lime', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
@@ -26,12 +29,12 @@ const clone = o => JSON.parse(JSON.stringify(o))
 function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return Object.assign(clone(DEF), JSON.parse(raw))
+    if (raw) return migrateState(JSON.parse(raw), DEF)
   } catch (e) { /* ignore */ }
   return clone(DEF)
 }
 
-const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
+const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || st.xunlian?.logs?.length || st.xunlian?.recipes?.length || st.xunlian?.meals?.length || st.xunlian?.target || st._ts)
 
 export const useStore = create((set, get) => {
   let pushTm = null
@@ -45,6 +48,7 @@ export const useStore = create((set, get) => {
   }
 
   const persist = (S, push = true) => {
+    S = withoutCredentials(S)
     S._ts = Date.now()
     registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))
@@ -95,10 +99,17 @@ export const useStore = create((set, get) => {
     // Mutate a draft of S via producer fn, then persist + schedule sync.
     update(mut, push = true) {
       const S = clone(get().S)
+      const beforePlan = JSON.stringify([S.routines, S.week, S.dayPlan])
+      const beforeEvidence = JSON.stringify([S.workouts, S.bodyweight, S.xunlian.logs])
       mut(S)
+      if (beforePlan !== JSON.stringify([S.routines, S.week, S.dayPlan])) {
+        S.xunlian.revision++
+        if (S.xunlian.meals.length) S.xunlian.nutritionNeedsReview = true
+      }
+      if(beforeEvidence!==JSON.stringify([S.workouts,S.bodyweight,S.xunlian.logs]))S.xunlian.revision++
       persist(S, push)
     },
-    replaceState(S, push = false) { persist(clone(S), push) },
+    replaceState(S, push = false) { persist(migrateState(S, DEF), push) },
 
     isGuest: () => localStorage.getItem('gym_guest') === '1',
     setGuest(v) { if (v) localStorage.setItem('gym_guest', '1'); else localStorage.removeItem('gym_guest'); set({}) },
@@ -122,7 +133,7 @@ export const useStore = create((set, get) => {
         const dirty = localStorage.getItem('gym_dirty') === '1'
         if (state && (!hasData(S) || ((state._ts || 0) >= (S._ts || 0) && !dirty))) {
           const active = S.active
-          const next = Object.assign(clone(DEF), state)
+          const next = migrateState(state, DEF)
           if (active) next.active = active
           persist(next, false)
         } else if (hasData(S)) { await get().pushState() }
@@ -161,7 +172,7 @@ export const useStore = create((set, get) => {
         const saved = await nativeLoad()
         const S = get().S
         if (saved && (!hasData(S) || (saved._ts || 0) >= (S._ts || 0))) {
-          persist(Object.assign(clone(DEF), saved), false)
+            try{persist(migrateState(saved, DEF), false)}catch{console.warn('Invalid native state; retained local data')}
         } else if (hasData(S)) {
           nativeSave(S)   // first run after an update from a file-less version: seed the mirror
         }

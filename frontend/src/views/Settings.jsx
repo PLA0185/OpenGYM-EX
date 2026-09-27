@@ -15,6 +15,8 @@ import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
+import { DeepSeekSettings } from './Planning.jsx'
+import { migrateState, backupState } from '../lib/xunlian-state.js'
 
 export default function Settings() {
   const nav = useNavigate()
@@ -28,8 +30,8 @@ export default function Settings() {
   const wakeOK = wakeLockSupported()
 
   const doExport = async () => {
-    const json = JSON.stringify(S, null, 2)
-    const name = 'opengym-backup-' + todayISO() + '.json'
+    const json = JSON.stringify(backupState(S), null, 2)
+    const name = 'xunlian-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
       try { await shareExport(json, name); toast(t('Backup exported')) } catch (e) { /* share sheet dismissed */ }
@@ -40,11 +42,14 @@ export default function Settings() {
     toast(t('Backup exported'))
   }
   const doImport = ev => {
-    const f = ev.target.files[0]; if (!f) return
+      const f = ev.target.files[0]; if (!f) return
+      if(f.size>30*1024*1024){toast(t('File too large'));return}
     const rd = new FileReader()
     rd.onload = () => {
       try {
-        const data = JSON.parse(rd.result)
+          const raw = JSON.parse(rd.result)
+          if (!Array.isArray(raw.workouts) || !Array.isArray(raw.routines)) throw new Error('not an openGym backup')
+          const data = migrateState(raw, DEF)
         if (!data.workouts || !data.routines) throw new Error('not an openGym backup')
         confirmSheet({ title: t('Import backup?'), message: t('This replaces all current data with the backup file.'), confirmText: t('Import'), danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data), true); toast(t('Backup imported')) } })
       } catch (e) { toast(t('Import failed: {0}', e.message)) }
@@ -101,6 +106,8 @@ export default function Settings() {
     </Section>
     {!user && !DEMO && !MOBILE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
+    <Section title={t('Xunlian planning')}><Row title={t('Planning profile')} accessory="chevron" onClick={() => nav('/planning')} /><Row title={t('Nutrition')} accessory="chevron" onClick={() => nav('/nutrition')} /><Row title={t('Training programs')} accessory="chevron" onClick={() => nav('/programs')} /></Section>
+    <DeepSeekSettings />
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <SelectRow
@@ -210,8 +217,8 @@ export default function Settings() {
     </Section>}
 
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      openGym · {t('free & open source (AGPL v3)')}<br />
-      <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">source code</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
+      循练 2.0 · 基于 openGym · {t('free & open source (AGPL v3)')}<br />
+      <a href="https://github.com/PLA0185/xunlian-2" target="_blank" rel="noopener">源码</a> · 动作文本: MIT · 素材: © Gym visual · USDA FDC · HowToCook (Unlicense)
     </div>
   </div>
 }

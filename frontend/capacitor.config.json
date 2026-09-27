@@ -1,6 +1,6 @@
 {
-  "appId": "ch.duartesantos.opengym",
-  "appName": "openGym",
+  "appId": "app.xunlian.personal",
+  "appName": "循练 2.0",
   "webDir": "dist",
   "backgroundColor": "#0c0e12",
   "android": {

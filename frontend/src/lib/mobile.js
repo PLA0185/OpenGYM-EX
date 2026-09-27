@@ -16,6 +16,7 @@ export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 const FILE = 'opengym-state.json'
 
 export async function nativeLoad() {
+  if (window.xunlianDesktop) return window.xunlianDesktop.stateLoad()
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     const r = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
@@ -24,6 +25,7 @@ export async function nativeLoad() {
 }
 
 export async function nativeSave(state) {
+  if (window.xunlianDesktop) return window.xunlianDesktop.stateSave(state)
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
@@ -35,6 +37,7 @@ export async function nativeSave(state) {
 // reminder time may just have been edited. `interactive` gates the OS permission prompt to
 // the Settings toggle; a background resync never pops a dialog.
 export async function syncReminder(S, interactive = false) {
+  if (window.xunlianDesktop) return false
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: [0, 1, 2, 3, 4, 5, 6].map(d => ({ id: 100 + d })) }).catch(() => {})
@@ -61,6 +64,11 @@ export async function syncReminder(S, interactive = false) {
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
 // (Files, AirDrop, mail, …) from a temp file instead.
 export async function shareExport(json, filename) {
+  if (window.xunlianDesktop) {
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
+    return
+  }
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
   const { Share } = await import('@capacitor/share')
   const w = await Filesystem.writeFile({ path: filename, directory: Directory.Cache, data: json, encoding: Encoding.UTF8 })

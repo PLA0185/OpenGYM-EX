@@ -4,6 +4,19 @@ media/gif/
 
 # Runtime data — users, passkeys, per-user state, session secret
 data/
+!data/
+data/*
+!data/sources.lock.json
+!data/build-report.json
+!data/HOWTOCOOK_LICENSE.txt
+!data/official-recipes.json
+!data/activity-reference.json
+!data/name-glossary.json
+!data/EXERCISE_LICENSE.txt
+!frontend/src/data/
+!frontend/src/data/*.json
+!scripts/data/
+!scripts/data/*
 
 # Local config
 .env
@@ -20,3 +33,14 @@ node_modules/
 CLAUDE.md
 AGENTS.md
 graphify-out/
+
+# Xunlian build inputs and local artifacts
+data/raw/
+artifacts/
+*.keystore
+*.jks
+frontend/android/local.properties
+frontend/public/img/
+frontend/public/gif/
+.private-signing/
+frontend/public/notices/
