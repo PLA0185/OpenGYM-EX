@@ -1,7 +1,7 @@
 {
   "name": "opengym-frontend",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -39,11 +39,11 @@
     "vitest": "^4.1.10"
   },
   "main": "desktop/main.cjs",
-  "description": "Xunlian local training and nutrition app",
+  "description": "DongQi local training and nutrition app",
   "author": "Xunlian contributors / openGym contributors",
   "build": {
     "appId": "app.xunlian.personal",
-    "productName": "Xunlian",
+    "productName": "DongQi",
     "directories": {
       "output": "../artifacts/windows"
     },
@@ -70,7 +70,8 @@
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "Xunlian-2.0.0-portable.exe"
+      "artifactName": "DongQi-2.0.1-portable.exe",
+      "useZip": true
     }
   }
 }

@@ -160,7 +160,7 @@ export function buildSets(S, cfg) {
     const prev = prevAt(i)
     const usable = prev && prev.r > 0 ? prev : null
     const w = conf && conf.w > 0 ? conf.w : (usable ? usable.w : cfg.weight)
-    sets.push({ w, r: usable ? usable.r : cfg.reps, done: false })
+    sets.push({ w:Number.isFinite(w)&&w>=0?w:0, r:usable ? usable.r : cfg.reps>0?cfg.reps:10, done: false })
   }
   return sets
 }

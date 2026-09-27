@@ -116,7 +116,7 @@ combos=[('鸡胸西兰花饭','Chicken broccoli rice',[('熟鸡胸肉',160),('�
 for i,(zh,en,parts) in enumerate(combos):
     missing=[name for name,g in parts if name not in lookup]
     if missing: raise ValueError('Missing curated Food mapping: '+str(missing))
-    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText=name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=['称量可食部分；食材生熟状态以食材条目为准，米饭及熟鸡胸肉按熟重。','肉、鱼和鸡蛋充分烹熟；蔬菜洗净煮熟或炒熟。','按原料组合装盘。用油按实际加入量调整。'],source='Xunlian portion suggestions',sourceUrl='',license='AGPL-3.0',revision=1,verified=True,tags=['循练组合'],notes='建议份量；非原作者食谱，营养按原料计算，未计烹饪损失。'))
+    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText=name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=['称量可食部分；食材生熟状态以食材条目为准，米饭及熟鸡胸肉按熟重。','肉、鱼和鸡蛋充分烹熟；蔬菜洗净煮熟或炒熟。','按原料组合装盘。用油按实际加入量调整。'],source='Xunlian portion suggestions',sourceUrl='',license='AGPL-3.0',revision=1,verified=True,tags=['动起组合'],notes='建议份量；非原作者食谱，营养按原料计算，未计烹饪损失。'))
 write(OUT/'recipes.json',recipes)
 
 # Conservative Chinese names: reviewed common exercises plus compositional glossary, with provenance.

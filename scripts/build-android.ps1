@@ -11,5 +11,5 @@ try {
     & '.\android\gradlew.bat' -p '.\android' assembleDebug --console=plain
     if($LASTEXITCODE -ne 0){throw 'Android build failed'}
     New-Item -ItemType Directory -Force -Path (Join-Path $taskRoot 'artifacts') | Out-Null
-    Copy-Item -LiteralPath '.\android\app\build\outputs\apk\debug\app-debug.apk' -Destination (Join-Path $taskRoot 'artifacts\xunlian-2.0.0-dev.apk')
+    Copy-Item -LiteralPath '.\android\app\build\outputs\apk\debug\app-debug.apk' -Destination (Join-Path $taskRoot 'artifacts\DongQi-2.0.1-dev.apk')
 }finally{Pop-Location}

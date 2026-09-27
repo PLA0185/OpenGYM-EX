@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">循练 2.0</string>
-    <string name="title_activity_main">循练 2.0</string>
+    <string name="app_name">动起</string>
+    <string name="title_activity_main">动起</string>
     <string name="package_name">ch.duartesantos.opengym</string>
     <string name="custom_url_scheme">ch.duartesantos.opengym</string>
 </resources>

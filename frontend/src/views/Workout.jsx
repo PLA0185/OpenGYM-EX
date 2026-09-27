@@ -15,6 +15,7 @@ import Icon from '../components/Icon.jsx'
 import { Button, Check, NumberField } from '../components/ui.jsx'
 import { nextPrescription, applyPrescription } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
+import { prefillRemainingSets } from '../lib/workout-prefill.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -59,6 +60,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
   const S = useStore(s => s.S)
   const working = useUI(s => s.work)
   const entry = S.active.entries[entryIdx]
+  const firstPending=entry.sets.findIndex(set=>!set.done)
   const ex = exOr(entry.id)
   const mode = modeOf({ ...(entry.target || {}), id: entry.id })
   const cardio = mode === 'cardio'
@@ -118,6 +120,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       <span>{t(...plan.why)}</span>
     </div>}
     <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
+      <p className="sect-f">{t('Values are prefilled from your confirmed working weight, previous session or plan. Adjust the first unfinished set, then copy it to the remaining sets.')}</p>
       {/* the header carries the same eff3 sizing as the rows, or the labels drift off their columns */}
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" /><span className="w-sp">{col1.hd}</span><span className="r-sp">{col2.hd}</span>{col3 && <span className="eff-sp">{col3.hd}</span>}{timed && <span className="ck-sp" />}<span className="ck-sp" /></div>
       {entry.sets.map((s, i) => <div key={i} className={'setrow' + (s.done ? ' done' : '') + (col3 ? ' eff3' : '')}>
@@ -136,6 +139,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
         <Button size="sm" icon="minus" disabled={entry.sets.length <= 1} onClick={onRemoveSet}>{t('Remove set')}</Button>
         <Button size="sm" icon="plus" onClick={onAddSet}>{t('Add set')}</Button>
       </div>
+      <Button size="sm" disabled={firstPending<0||!!working} onClick={()=>{try{useStore.getState().update(s=>prefillRemainingSets(s.active.entries[entryIdx],firstPending));useUI.getState().toast(t('Remaining sets prefilled'))}catch{useUI.getState().toast(t('Complete valid set values first'))}}}>{t('Use set {0} for remaining sets',firstPending+1)}</Button>
     </div>
   </>
 }
@@ -178,7 +182,7 @@ function ActiveWorkout() {
   // behave exactly as they do for a reps set.
   const startTimed = (idx, i) => {
     const e = A.entries[idx]
-    useUI.getState().startWork(e.sets[i].sec || 45, exOr(e.id).n, elapsed => {
+    useUI.getState().startWork(e.sets[i].sec || 45, exerciseName(exOr(e.id)), elapsed => {
       mutEntry(idx, en => { en.sets[i].sec = elapsed })
       if (!useStore.getState().S.active.entries[idx].sets[i].done) toggle(idx, i)
     })
