@@ -131,6 +131,13 @@ export function effectiveRoutine(S, iso) {
   return id ? S.routines.find(r => r.id === id) || null : null
 }
 export function buildSets(S, cfg) {
+  // Source plans and accepted AI edits are prescriptions, not last-session copies.
+  if (cfg.prefillBasis) {
+    return Array.from({length:Math.max(1,cfg.sets||1)},()=>modeOf(cfg)==='cardio'
+      ? {min:cfg.min,speed:cfg.speed??0,done:false}
+      : modeOf(cfg)==='time' ? {sec:cfg.sec,w:cfg.weight,done:false}
+      : {w:cfg.weight,r:cfg.reps,done:false})
+  }
   const last = lastEntryFor(S, cfg.id)
   const n = Math.max(1, cfg.sets || 1)
   const mode = modeOf(cfg)

@@ -1,4 +1,5 @@
 import { positive, clone, planningContext, dailyTotals, localDate } from './nutrition.js'
+import { resolvePrescription } from './prescription.js'
 export function validateProgram(p, exercises) {
   if (!p.nameZh || !p.days?.length || p.days.length > 7) throw new Error('Invalid program')
   const ids = new Set(exercises.map(e => e.id))
@@ -16,8 +17,9 @@ export function validateProgram(p, exercises) {
       if (e.rpe != null && (!Number.isFinite(e.rpe) || e.rpe < 1 || e.rpe > 10)) throw new Error('Invalid RPE')
       if (e.rir != null && (!Number.isFinite(e.rir) || e.rir < 0 || e.rir > 10)) throw new Error('Invalid RIR')
       if (e.restSec != null && (!Number.isFinite(e.restSec) || e.restSec < 0 || e.restSec > 900)) throw new Error('Invalid rest')
-      // Percent loads must be converted with an explicit tested max; never silently discard them.
-      if (e.percent1RM != null && !positive(e.weight)) throw new Error('Set a weight for percentage prescription')
+      if (e.percent1RM != null && !positive(e.percent1RM,100)) throw new Error('Invalid percentage')
+      if (e.weightUnit != null && !['kg','lb'].includes(e.weightUnit)) throw new Error('Invalid weight unit')
+      if (e.baselineWeight != null && (!positive(e.baselineWeight,1000) || !Number.isInteger(e.baselineReps) || !positive(e.baselineReps,12))) throw new Error('Baseline needs weight and 1–12 completed reps')
     })
   })
   return p
@@ -47,7 +49,7 @@ export function applyProgram(S, p, exercises, uid) {
   const week = {}
   const routines = p.days.map(d => {
     const id = uid(); week[d.weekday] = id
-    return { id, name:d.dayName, emoji:'dumbbell', prog:['off','linear','greyskull','double','time'].includes(p.progression) ? p.progression : 'off', sourceProgramId:p.id, ex:d.exerciseItems.map(e => ({ id:e.exerciseId, sets:e.sets, reps:e.reps || e.repsMax || 0, repsMin:e.repsMin || 0, weight:e.weight || 0, ...(e.durationSec ? exercises.find(x=>x.id===e.exerciseId)?.bp==='cardio'?{mode:'cardio',min:e.durationSec/60,speed:e.speed||0}:{mode:'time', sec:e.durationSec} : {}), sg:e.supersetGroup || e.circuitGroup || '', restSec:e.restSec, prescription:clone(e) })) }
+    return { id, name:d.dayName, emoji:'dumbbell', prog:'off', requestedProgression:p.progression, sourceProgramId:p.id, ex:d.exerciseItems.map(e => resolvePrescription(S,e,exercises.find(x=>x.id===e.exerciseId),p)) }
   })
   S.routines.push(...routines); S.week = week
   S.dayPlan = Object.fromEntries(Object.entries(S.dayPlan||{}).filter(([date])=>date<localDate()))
@@ -56,7 +58,7 @@ export function applyProgram(S, p, exercises, uid) {
 }
 export function weeklyEvidence(S, dates) {
   const x = S.xunlian, workouts = S.workouts.filter(w => dates.includes(w.d))
-  return { context:planningContext(S), workouts:workouts.slice(-20), bodyweight:S.bodyweight.slice(-14), intake:dates.map(date=>({date, records:x.logs.filter(l=>l.date===date).length, actual:dailyTotals(x.logs,date)})) }
+  return { context:planningContext(S), routines:clone(S.routines), adjustmentRules:'动作须有近90天真实已完成记录；重量每次最多10%，次数最多2次，组数最多2组，休息最多60秒；未完成目标或极限用力不得加重。action=prescription 时使用 weight/reps/restSec，单位与当前训练相同。必须解释证据；缺少记录只给 note。', workouts:workouts.slice(-20), bodyweight:S.bodyweight.slice(-14), intake:dates.map(date=>({date, records:x.logs.filter(l=>l.date===date).length, actual:dailyTotals(x.logs,date)})) }
 }
 // Keep the selected published activity MET or an explicitly entered user range.
 export function energyEstimate(weightKg, minutes, metMin, metMax = metMin, actual = false) {
@@ -80,5 +82,9 @@ export function guidelinePrograms(exercises) {
   const extra=builtInPrograms(exercises)[3].days[0].exerciseItems.slice(-1)
   const abs=builtInPrograms(exercises)[6].days[0].exerciseItems.slice(-1)
   p.days=p.days.map(d=>({...d,exerciseItems:[...d.exerciseItems,...clone(extra),...clone(abs)]}))
-  return [p]
+  const strength=clone(p)
+  strength.id='guideline-acsm-2026-strength';strength.nameZh='ACSM 2026 指南整理 · 力量全身两练';strength.nameEn='ACSM 2026 derived strength';strength.sourceName='ACSM 2026 抗阻训练指南（应用编排）';strength.sourceUrl='https://acsm.org/resistance-training-guidelines-update-2026/';strength.originalTitle='ACSM Unveils Landmark 2026 Resistance Training Guidelines';strength.license='Guideline facts summarized; exercise arrangement AGPL-3.0'
+  strength.notes='ACSM 2026：力量目标约 80% 1RM，每动作 2–3 组，每周至少两次覆盖主要肌群。这里采用 3 组；动作选择、5 次和 180 秒休息为应用编排，非 ACSM 发布的固定课程。公斤数按近 90 天已完成记录的估算 1RM 换算；无记录时只需首次确认个人基线，不按体重猜负荷。'
+  strength.days=strength.days.map(d=>({...d,exerciseItems:d.exerciseItems.map(e=>({...e,sets:3,reps:5,restSec:180,percent1RM:80,estimatedFields:['reps','restSec'],sourceFields:['sets','percent1RM']}))}))
+  return [strength,p]
 }

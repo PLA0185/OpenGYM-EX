@@ -8,6 +8,9 @@ mkdirSync(join(root,'data/raw'),{recursive:true})
 const profile=mkdtempSync(join(root,'data/raw/windows-verify-'))
 const bench=EXDB.find(e=>e.n==='barbell bench press').id,squat=EXDB.find(e=>e.n==='barbell full squat').id
 const fixture={schemaVersion:2,lang:'zh',unit:'kg',sound:false,_ts:Date.now(),routines:[],workouts:[],bodyweight:[],customEx:[],week:{},dayPlan:{},exWeights:{},active:{id:'verification-workout',d:new Date().toISOString().slice(0,10),start:Date.now(),name:'验证用训练',routineId:null,cur:0,entries:[{id:bench,target:{sets:3,reps:10,weight:15},sets:[{w:15,r:8,done:true},{w:15,r:10,done:false},{w:0,r:0,done:false}]},{id:squat,target:{sets:1,reps:10,weight:0},sets:[{w:0,r:10,done:false}]}]}}
+fixture.active.entries[0].target.restSec=120
+fixture.exWeights[bench]={w:100,d:fixture.active.d}
+fixture.active.entries[0].target.prefillBasis={sourceName:'验证导入方案',load:'source',unit:'kg',rest:'source'}
 writeFileSync(join(profile,'workout-fixture.json'),JSON.stringify(fixture))
 const executable=resolve(process.argv[2]||join(root,'artifacts/windows/win-unpacked/DongQi.exe'))
 const env={...process.env};delete env.ELECTRON_RUN_AS_NODE

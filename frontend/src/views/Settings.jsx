@@ -217,7 +217,7 @@ export default function Settings() {
     </Section>}
 
     <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      循练 2.0 · 基于 openGym · {t('free & open source (AGPL v3)')}<br />
+      动起 · 基于 openGym · {t('free & open source (AGPL v3)')}<br />
       <a href="https://github.com/PLA0185/xunlian-2" target="_blank" rel="noopener">源码</a> · 动作文本: MIT · 素材: © Gym visual · USDA FDC · HowToCook (Unlicense)
     </div>
   </div>

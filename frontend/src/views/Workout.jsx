@@ -16,6 +16,7 @@ import { Button, Check, NumberField } from '../components/ui.jsx'
 import { nextPrescription, applyPrescription } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { prefillRemainingSets } from '../lib/workout-prefill.js'
+import { restSeconds } from '../lib/prescription.js'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -96,7 +97,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     <div className={'stp ' + cls}>
       <button aria-label="Decrease" onClick={() => bump(s, i, col, -1)}><Icon name="minus" /></button>
       {/* a typed effort is capped — there is no RPE 12, and 12 reps in reserve is a warm-up */}
-      <span className="val"><NumberField decimal={col.dec} nullable={col.opt} value={s[col.f] ?? ''}
+      <span className="val"><NumberField decimal={col.dec} nullable={col.opt || (col.f==='w'&&!!entry.target?.prefillBasis)} value={s[col.f] ?? ''}
         onChange={v => onField(i, col.f, col.eff ? capEffort(col.eff, v) : v)} /></span>
       <button aria-label="Increase" onClick={() => bump(s, i, col, 1)}><Icon name="plus" /></button>
     </div>
@@ -114,6 +115,9 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       {best > 0 && <span className="tag nocap">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
     </div>
     {last && <div className="small dim" style={{ marginBottom: 4 }}>{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s, last.target)).join(', ')}</div>}
+    <p className="sect-f">{t('Rest seconds')}: {restSeconds(entry,S.restSec)} s · {entry.target?.prefillBasis?.rest==='app-default'?t('App default'):entry.target?.prefillBasis?.rest==='accepted-ai'?t('Accepted AI adjustment'):t('Plan preset')}</p>
+    {entry.target?.prefillBasis&&<p className="sect-f">{t('Source')}: {entry.target.prefillBasis.sourceName} · {t('Load basis '+entry.target.prefillBasis.load)}{entry.target.prefillBasis.evidence?.date&&' · '+entry.target.prefillBasis.evidence.date}</p>}
+    {entry.target?.prefillBasis?.load==='pending'&&<p className="notice">{t('Load needs a personal baseline. Enter a known working load once, then fill remaining sets. No weight has been guessed.')}</p>}
     {entry.target?.prescription&&<p className="sect-f">{[['rpe','RPE'],['rir','RIR'],['percent1RM','% 1RM'],['tempo','节奏'],['notes','备注']].filter(([k])=>entry.target.prescription[k]!=null).map(([k,label])=>label+': '+entry.target.prescription[k]).join(' · ')}</p>}
     {plan && plan.why && plan.kind !== 'off' && <div className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}>
       <Icon name={plan.kind === 'up' ? 'arrowUp' : plan.kind === 'deload' ? 'arrowDown' : 'lightbulb'} />
@@ -190,6 +194,8 @@ function ActiveWorkout() {
 
   const toggle = (idx, i) => {
     const m = modeAt(idx)
+    const set=A.entries[idx].sets[i]
+    if(!set.done && ((m==='reps'&&(!Number.isFinite(set.w)||set.w<0||set.w>1000||!Number.isInteger(set.r)||set.r<1||set.r>100))||(m==='time'&&(!Number.isFinite(set.w)||set.w<0||!Number.isFinite(set.sec)||set.sec<=0))||(m==='cardio'&&(!Number.isFinite(set.min)||set.min<=0)))) {useUI.getState().toast(t('Complete valid set values first'));return}
     const cardioEntry = m === 'cardio'
     const isLastUnit = unitIdx >= units.length - 1
     let askTop = false, exJustDone = false, workoutDone = false
@@ -199,7 +205,7 @@ function ActiveWorkout() {
         beep(S.sound, 1040, 0.12); vibrate(30)
         const isLastExInUnit = idx === unit[unit.length - 1]
         const unitDone = unit.every(ui => (ui === idx ? e : A.entries[ui]).sets.every(x => x.done))
-        if (isLastExInUnit && !unitDone) startRest(e.target?.restSec ?? S.restSec)
+        if (isLastExInUnit && !unitDone) startRest(restSeconds(e,S.restSec))
         else if (unitDone) stopRest()
         if (unitDone && isLastUnit) workoutDone = true      // last exercise's last set → done
         // Only reps training has a "working weight" worth confirming — a bodyweight plank

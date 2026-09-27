@@ -40,6 +40,7 @@ export const useUI = create((set, get) => ({
 
   startRest(sec) {
     get().stopRest()
+    if (!Number.isFinite(sec) || sec <= 0) return
     const endsAt = Date.now() + sec * 1000
     set({ timer: { left: sec, total: sec, endsAt } })
     pushRestTimer(sec)

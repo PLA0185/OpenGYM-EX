@@ -12,6 +12,7 @@ import { EXIDX } from './exercises.js'
 import { modeOf, fmtSec } from './history.js'
 import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
 import { t } from './i18n.js'
+import { resolvePrescription } from './prescription.js'
 
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
@@ -39,6 +40,8 @@ function cleanEx(e) {
   if (e.inc > 0) o.inc = e.inc
   if (e.repsMin != null) o.repsMin = e.repsMin
   if (e.sg) o.sg = e.sg
+  if (e.restSec != null) o.restSec = e.restSec
+  if (e.weight != null) o.weight = e.weight
   return o
 }
 
@@ -119,7 +122,11 @@ export function mergePlan(s, bundle, { schedule } = {}) {
       name: r.name || t('Shared routine'),
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
-      ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
+      ex: (r.ex || []).map(e => {
+        const id=exIdMap[e.id]||e.id
+        const item={exerciseId:id,sets:e.sets,reps:e.reps,weight:e.weight,restSec:e.restSec,durationSec:modeOf(e)==='time'?e.sec:modeOf(e)==='cardio'?e.min*60:undefined,speed:e.speed,supersetGroup:e.sg}
+        return {...e,...resolvePrescription(s,item,EXIDX[id]||s.customEx.find(x=>x.id===id),{sourceName:bundle.name||'用户导入的 openGym 方案'}),prog:'off'}
+      })
     })
   })
   if (schedule) {

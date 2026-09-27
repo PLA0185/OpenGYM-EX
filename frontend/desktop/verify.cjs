@@ -20,8 +20,12 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('预填剩余组')).click()",true)
   const copied=await win.webContents.executeJavaScript("JSON.parse(localStorage.getItem('gym_state_v1')).active.entries[0].sets")
   check(copied[0].done&&copied[0].r===8&&copied[2].w===15&&copied[2].r===10&&!copied[2].done,'Prefill preserves actual records')
-  for(let i=0;i<2;i++){await win.webContents.executeJavaScript("document.querySelector('.setrow [role=checkbox][aria-checked=false]').click()",true);await pause(300)}
+  check((await win.webContents.executeJavaScript('document.body.innerText')).includes('120 s'),'Source rest preset visible')
+  await win.webContents.executeJavaScript("document.querySelector('.setrow [role=checkbox][aria-checked=false]').click()",true);await pause(300)
+  check(await win.webContents.executeJavaScript("['2:00','1:59'].includes(document.querySelector('#timer.rest .t')?.textContent)"),'Source 120-second rest countdown')
+  await win.webContents.executeJavaScript("document.querySelector('.setrow [role=checkbox][aria-checked=false]').click()",true);await pause(300)
   check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('h3')).some(h=>h.textContent.includes('杠铃卧推')&&/barbell bench press/i.test(h.textContent)&&h.textContent.includes('完成'))"),'Bilingual completion sheet')
+  check(await win.webContents.executeJavaScript("document.querySelector('.sheet .bw-read')?.textContent.trim()==='15 kg'&&document.body.innerText.includes('下次按来源方案')"),'Actual working load is not replaced by lifetime best')
   await pause(500)
   fs.writeFileSync(path.join(app.getPath('userData'),'workout-completion.png'),(await win.webContents.capturePage()).toPNG())
   await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('保存并下')).click()",true)
@@ -32,6 +36,11 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
     for(let attempt=0;attempt<40;attempt++){await pause(250);text=await win.webContents.executeJavaScript('document.body.innerText');if(text.includes(title))break}
     check(!text.includes('Something went wrong')&&!text.includes('出了点问题'),'Route crashed: '+route)
     check(text.includes(title),'Missing title: '+route+' '+text.slice(0,120))
+    if(route==='programs'){
+      await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.lrow.tap')).find(b=>b.textContent.includes('ACSM 2026')).click()",true);await pause(300)
+      check(await win.webContents.executeJavaScript("document.body.innerText.includes('训练预填')&&document.body.innerText.includes('180 s')&&document.body.innerText.includes('80% 1RM')"),'Official-derived program prescription review')
+      await win.webContents.executeJavaScript("document.querySelector('.mback').click()",true)
+    }
   }
   const manifest=JSON.parse(fs.readFileSync(path.join(path.dirname(entry),'media-manifest.json'),'utf8'))
   const crypto=require('node:crypto')
@@ -40,6 +49,6 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   check(await win.webContents.executeJavaScript('Array.from(document.images).some(img=>img.complete&&img.naturalWidth>0&&img.src.includes("/img/"))'),'Offline exercise image decode')
   await win.webContents.executeJavaScript("window.xunlianDesktop.credentialSet('')")
   check(!errors.length,'Renderer errors: '+errors.join('; '))
-  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese startup','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Bilingual completion sheet','Completion advances to next exercise','Six offline routes','2648 packaged media SHA-256 hashes','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
+  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese startup','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Six offline routes','2648 packaged media SHA-256 hashes','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
   fs.writeFileSync(path.join(app.getPath('userData'),'verification-report.json'),JSON.stringify(report,null,2));app.quit()
 }

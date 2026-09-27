@@ -50,7 +50,8 @@
     "files": [
       "dist/**/*",
       "desktop/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/**/*"
     ],
     "extraFiles": [
       {
