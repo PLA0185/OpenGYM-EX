@@ -17,7 +17,9 @@
 快速构建（PowerShell，Node.js、Python、JDK、Android SDK 已就绪）：
 
 ```powershell
-Set-Location frontend
+Set-Location api
+npm ci
+Set-Location ../frontend
 npm ci
 npm run data:bootstrap
 npm test

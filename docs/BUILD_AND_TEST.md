@@ -5,7 +5,9 @@
 ## 数据与依赖
 
 ```powershell
-Set-Location D:/OpenGYM-EX/frontend
+Set-Location D:/OpenGYM-EX/api
+npm ci
+Set-Location ../frontend
 npm ci
 npm run data:bootstrap
 ```
