@@ -1,6 +1,6 @@
 // Purpose-built verification command. Uses an isolated profile and synthetic credentials only.
 exports.run=async({app,win,fs,path,state,credential,entry})=>{
-  const errors=[];win.webContents.on('console-message',(_event,level,message)=>{if(level===3)errors.push(message)})
+  const errors=[];win.webContents.on('console-message',(event,level,message)=>{if(event.level==='error'||level===3)errors.push(event.message||message)})
   await new Promise(resolve=>win.webContents.once('did-finish-load',resolve))
   const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=(ok,msg)=>{if(!ok)throw new Error(msg)}
   await pause(1000)
@@ -34,7 +34,7 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
     await win.webContents.executeJavaScript(`location.hash=${JSON.stringify('#/'+route)}`)
     let text=''
     for(let attempt=0;attempt<40;attempt++){await pause(250);text=await win.webContents.executeJavaScript('document.body.innerText');if(text.includes(title))break}
-    check(!text.includes('Something went wrong')&&!text.includes('出了点问题'),'Route crashed: '+route)
+    check(!text.includes('Something went wrong')&&!text.includes('出了点问题'),'Route crashed: '+route+' '+errors.join('; '))
     check(text.includes(title),'Missing title: '+route+' '+text.slice(0,120))
     if(route==='programs'){
       win.webContents.enableDeviceEmulation({screenPosition:'mobile',screenSize:{width:360,height:800},viewPosition:{x:0,y:0},viewSize:{width:360,height:800},deviceScaleFactor:1,scale:1})
@@ -47,7 +47,7 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
       check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.prescription-grid input')).every(i=>getComputedStyle(i).color!=='rgb(255, 255, 255)')"),'Readable light numeric fields')
       await win.webContents.executeJavaScript("document.documentElement.dataset.theme='dark'")
       await win.webContents.executeJavaScript("document.querySelector('.mback').click()",true)
-      win.webContents.disableDeviceEmulation()
+  win.webContents.disableDeviceEmulation()
     }
     if(route==='settings'){
       await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='显示密钥').click()",true)
@@ -79,6 +79,27 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   check(coachText.includes('审核训练与饮食')&&!coachText.includes('回答完了，直接生成'),'Sufficient conditions skip questions')
   await win.webContents.executeJavaScript("window.fetch=window.__originalFetch;document.querySelector('.feature-page').scrollIntoView({block:'start'})");await pause(200)
   fs.writeFileSync(path.join(app.getPath('userData'),'assistant-mobile.png'),(await win.webContents.capturePage()).toPNG())
+      await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='食材与完整做法').click()",true);await pause(250)
+  check(await win.webContents.executeJavaScript("document.querySelectorAll('.recipe-ingredient').length>0&&document.querySelectorAll('.recipe-guide .steps-list li').length>=4"),'Recipe ingredients and detailed cooking steps reachable from coach')
+  fs.writeFileSync(path.join(app.getPath('userData'),'recipe-mobile.png'),(await win.webContents.capturePage()).toPNG())
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='开始逐步做菜').click()",true);await pause(100)
+  const firstCookingStep=await win.webContents.executeJavaScript("document.querySelector('.cooking-current').textContent")
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='下一步').click()",true);await pause(100)
+  check(await win.webContents.executeJavaScript("document.querySelector('.cooking-current').textContent!=="+JSON.stringify(firstCookingStep)),'Step-by-step cooking advances')
+  await win.webContents.executeJavaScript("document.querySelector('.mback').click()",true);await pause(100)
+  await win.webContents.executeJavaScript("(()=>{const saved=JSON.parse(localStorage.getItem('gym_state_v1'));saved.xunlian.meals=saved.xunlian.proposals.find(p=>p.origin==='assistant').snapshots;localStorage.setItem('gym_state_v1',JSON.stringify(saved));return window.xunlianDesktop.stateSave(saved).then(()=>{location.hash='#/nutrition/week';location.reload()})})()")
+  await new Promise(resolve=>win.webContents.once('did-finish-load',resolve));await pause(600)
+  win.webContents.enableDeviceEmulation({screenPosition:'mobile',screenSize:{width:360,height:800},viewPosition:{x:0,y:0},viewSize:{width:360,height:800},deviceScaleFactor:1,scale:1})
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='购物清单').click()",true);await pause(100)
+  check(await win.webContents.executeJavaScript("document.querySelectorAll('.shopping-item').length>0"),'Shopping ingredients are separate checklist rows')
+  check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.shopping-item')).every(row=>{const r=row.getBoundingClientRect();return r.width>=280&&r.right<=innerWidth&&row.querySelector('input').getBoundingClientRect().width>=24})"),'Readable purchasing rows at 360px')
+  await win.webContents.executeJavaScript("document.querySelector('.shopping-item input').click()",true);await pause(300)
+  check(await win.webContents.executeJavaScript("document.querySelectorAll('.shopping-item.purchased').length===1"),'Purchased item moves to completed')
+  fs.writeFileSync(path.join(app.getPath('userData'),'shopping-mobile.png'),(await win.webContents.capturePage()).toPNG())
+  await win.webContents.executeJavaScript("location.reload()")
+  await new Promise(resolve=>win.webContents.once('did-finish-load',resolve));await pause(600)
+  await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='购物清单').click()",true);await pause(100)
+  check(await win.webContents.executeJavaScript("document.querySelectorAll('.shopping-item.purchased').length===1"),'Purchase checklist survives reload')
   win.webContents.disableDeviceEmulation()
   const manifest=JSON.parse(fs.readFileSync(path.join(path.dirname(entry),'media-manifest.json'),'utf8'))
   const crypto=require('node:crypto')
@@ -89,6 +110,6 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   check(await win.webContents.executeJavaScript('Array.from(document.images).some(img=>img.complete&&img.naturalWidth>0&&img.src.includes("/img/"))'),'Offline exercise image decode')
   await win.webContents.executeJavaScript("window.xunlianDesktop.credentialSet('')")
   check(!errors.length,'Renderer errors: '+errors.join('; '))
-  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Compact mobile credential actions','Mock short intake, direct generation, local portion calibration and saved proposal','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
+  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Compact mobile credential actions','Mock short intake, direct generation, local portion calibration and saved proposal','Recipe ingredients, detailed steps and step-by-step cooking','Separate persistent shopping checklist','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
   fs.writeFileSync(path.join(app.getPath('userData'),'verification-report.json'),JSON.stringify(report,null,2));app.quit()
 }

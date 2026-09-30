@@ -12,6 +12,7 @@ data/*
 !data/official-recipes.json
 !data/activity-reference.json
 !data/name-glossary.json
+!data/recipe-guides.json
 !data/EXERCISE_LICENSE.txt
 !frontend/src/data/
 !frontend/src/data/*.json

@@ -2,7 +2,12 @@ import { clone, emptyXunlian, positive, validateTarget, validatePlanningProfile,
 import { ProgramSchema, ReviewSchema } from './deepseek.js'
 const dateValid=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(+new Date(d+'T12:00:00'))&&localDate(new Date(d+'T12:00:00'))===d
 function validNutrition(n){return n&&typeof n==='object'&&!Array.isArray(n)&&NUTRIENTS.every(k=>n[k]==null||(Number.isFinite(n[k])&&n[k]>=0&&n[k]<=1000000))&&Number.isFinite(n.kcal)}
-export function validateMealSnapshots(list){if(!Array.isArray(list))throw new Error('Invalid meals');for(const m of list)if(typeof m.id!=='string'||!dateValid(m.date)||!validNutrition(m.nutritionSnapshot)||(m.servings!=null&&!positive(m.servings,1000))||(m.grams!=null&&!positive(m.grams))||(m.costSnapshotCny!=null&&(!Number.isFinite(m.costSnapshotCny)||m.costSnapshotCny<0||m.costSnapshotCny>1000000)))throw new Error('Invalid meal')}
+function validateRecipe(r){
+  if(!r||typeof r.id!=='string'||typeof r.nameZh!=='string'||!positive(r.servings,1000)||!Array.isArray(r.ingredients)||r.ingredients.length>300||!Array.isArray(r.steps)||r.steps.length>1000||r.steps.some(s=>typeof s!=='string'||s.length>200000))throw new Error('Invalid recipe')
+  for(const key of ['tools','tips','images'])if(r[key]!=null&&(!Array.isArray(r[key])||r[key].length>1000||r[key].some(s=>typeof s!=='string'||s.length>20000)))throw new Error('Invalid recipe '+key)
+  for(const i of r.ingredients)if(!i||typeof i!=='object'||(i.grams!=null&&!positive(i.grams,1000000)))throw new Error('Invalid recipe ingredient')
+}
+export function validateMealSnapshots(list){if(!Array.isArray(list))throw new Error('Invalid meals');for(const m of list)if(typeof m.id!=='string'||!dateValid(m.date)||!validNutrition(m.nutritionSnapshot)||(m.servings!=null&&!positive(m.servings,1000))||(m.grams!=null&&!positive(m.grams))||(m.costSnapshotCny!=null&&(!Number.isFinite(m.costSnapshotCny)||m.costSnapshotCny<0||m.costSnapshotCny>1000000)))throw new Error('Invalid meal');for(const m of list)if(m.recipeSnapshot)validateRecipe(m.recipeSnapshot)}
 function validateRoutines(list){list.forEach(r=>{if(typeof r.id!=='string'||typeof r.name!=='string'||!Array.isArray(r.ex))throw new Error('Invalid routine');r.ex.forEach(e=>{if(typeof e.id!=='string'||!positive(e.sets,100)||!Number.isInteger(e.sets))throw new Error('Invalid exercise')})})}
 const forbidden = /^(apiKey|api_key|token|credential|credentials|authorization|secret|credentialCache)$/i
 export function withoutCredentials(value) {
@@ -19,6 +24,8 @@ export function migrateState(state, defaults) {
   next.xunlian={...emptyXunlian(),...(next.xunlian||{})}
   next.xunlian.profile={...emptyXunlian().profile,...next.xunlian.profile}
   validatePlanningProfile(next.xunlian.profile)
+  const shopping=next.xunlian.shoppingChecked
+  if(!shopping||typeof shopping!=='object'||Array.isArray(shopping)||Object.keys(shopping).length>520||Object.entries(shopping).some(([date,items])=>!dateValid(date)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>5000||Object.values(items).some(g=>!positive(g,1000000))))throw new Error('Invalid shopping checklist')
   next.xunlian.ai={...emptyXunlian().ai,...next.xunlian.ai}
   if(!Array.isArray(next.xunlian.healthSamples)||next.xunlian.healthSamples.length>10000||next.xunlian.healthSamples.some(s=>!s||typeof s.id!=='string'||!['steps','heartRate','distance','calories','weight'].includes(s.dataType)||!Number.isFinite(s.value)||s.value<0||!Number.isFinite(Date.parse(s.startDate))||!Number.isFinite(Date.parse(s.endDate))))throw new Error('Invalid health samples')
   for(const key of ['routines','workouts','bodyweight','customEx']) if(!Array.isArray(next[key]))throw new Error('Invalid '+key)
@@ -28,7 +35,7 @@ export function migrateState(state, defaults) {
   for(const w of next.workouts)if(typeof w.id!=='string'||!dateValid(w.d)||!Array.isArray(w.entries)||w.entries.some(e=>typeof e.id!=='string'||!Array.isArray(e.sets)))throw new Error('Invalid workout')
   for(const key of ['foods','recipes','meals','logs','programs','favorites','drafts','proposals','snapshots']) if(!Array.isArray(next.xunlian[key]))throw new Error('Invalid '+key)
   for(const f of next.xunlian.foods)if(typeof f.id!=='string'||typeof f.nameZh!=='string'||!validNutrition(f.nutritionPer100g))throw new Error('Invalid custom food')
-  for(const r of next.xunlian.recipes) if(typeof r.id!=='string'||!positive(r.servings,1000)||!Array.isArray(r.ingredients)||!Array.isArray(r.steps))throw new Error('Invalid recipe')
+  for(const r of next.xunlian.recipes)validateRecipe(r)
   validateMealSnapshots([...next.xunlian.meals,...next.xunlian.logs])
   for(const p of next.xunlian.programs)if(!ProgramSchema.safeParse(p).success)throw new Error('Invalid saved program')
   // Drafts intentionally allow unresolved entities and incomplete prescriptions.

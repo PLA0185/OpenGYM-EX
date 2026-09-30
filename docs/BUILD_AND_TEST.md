@@ -23,9 +23,9 @@ Set-Location ..
 pwsh -NoProfile -File scripts/build-release.ps1
 ```
 
-Windows：`artifacts/windows/OpenGymEX-2.0.4-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
+Windows：`artifacts/windows/OpenGymEX-2.0.5-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
 
-Android：`artifacts/OpenGymEX-2.0.4-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.4-dev / versionCode 20004，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.4-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
+Android：`artifacts/OpenGymEX-2.0.5-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.5-dev / versionCode 20005，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.5-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
 
 Android 签名证书 SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。
 
@@ -70,9 +70,9 @@ Windows便携EXE包含大量离线媒体，启动前需解包。2.0.0采用嵌�
 
 2.0.3 增加 @capacitor/app 7.1.2 监听安卓返回：关闭最上层可关闭弹窗、返回路由；首页连续两次返回才最小化回桌面，保留训练。追问兼容字符串／问题对象，完整 Schema 与具体修复错误发给模型；两次格式修复仍失败时明确使用本地确认问题，生成计划仍严格校验。新页面统一间距，密钥操作采用两列按钮。
 
-## 2.0.4 补充验证与迁移
+## 2.0.5 补充验证与迁移
 
-当前状态以DELIVERY_STATUS和V8任务书为准。原始大数据不进Git，已保存到私人Release的source-cache.zip；新机解压到项目根后bootstrap可直接使用8份锁定来源，不依赖重下载。
+当前状态以DELIVERY_STATUS和V9任务书为准。原始大数据不进Git，已保存到私人Release的source-cache.zip；新机解压到项目根后bootstrap可直接使用8份锁定来源，不依赖重下载。
 
 ```powershell
 Set-Location D:/OpenGYM-EX
@@ -80,7 +80,7 @@ node scripts/data/validate-seed.mjs
 python scripts/data/test-hd-media.py
 node --test scripts/howtocook-local.test.mjs
 python scripts/verify-apk.py
-node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.4-portable.exe
+node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.5-portable.exe
 ```
 
 Windows验证器的可选参数是实际EXE路径，不是--portable标记。默认验证目录包；发布前验证最终便携EXE。Android验证器优先环境JDK/SDK（否则本机默认路径），核对签名、版本、原生返回插件、素材/NOTICE与最终dist逐文件一致，输出artifacts/verification-apk.json。
@@ -88,3 +88,7 @@ Windows验证器的可选参数是实际EXE路径，不是--portable标记。默
 可选本机只读菜谱服务：node scripts/howtocook-local.mjs，地址http://127.0.0.1:3999；使用锁定373条菜谱。它不是公网服务，手机不能用电脑的localhost。源码首次ci不需要此服务。
 
 本机版本升级时更新package及锁文件版本与Android versionName/versionCode，产物名由脚本跟随版本。不要为换机传node_modules或DPAPI旧密码文件当作有效恢复；以加密vault和独立口令恢复原签名。私人Release同时保存验证报告及SHA256SUMS；API Key、私人记录和恢复口令不上传。
+
+## 2.0.5 做菜与采购
+
+全部402道配方的食材和做法由build-seed.py生成；应用逐道细节在data/recipe-guides.json。做法组件RecipeCooking复用于正式餐食、AI草稿与在线预览。recipe-guide.js保存餐食做法快照，xunlian-state.js验证恢复。采购勾选是xunlian.shoppingChecked，按周保存Food ID及当时克数；用量变化需要重新核对。Windows实际包验证加入做法可达、逐步前进、360像素采购行宽、已购买分组和重载保留。

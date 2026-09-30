@@ -93,19 +93,42 @@ for path in sorted((repo/'dishes').rglob('*.md')):
     if not title: continue
     name=title[1].strip(); rel=str(path.relative_to(repo)).replace('\\','/'); ingredients=[]; steps=[]; mode=''; calculated=bool(re.search(r'^##.*(?:计算|用量)',text,re.M))
     for line in text.splitlines():
-        if line.startswith('##'):
+        if re.match(r'^##\s',line):
             mode='ingredients' if re.search('计算|用量',line) or (not calculated and re.search('原料|材料',line)) else 'steps' if re.search('操作|步骤|制作',line) else ''; continue
-        if not line.strip() or not re.match(r'^\s*(?:[-*]|\d+[.、])\s*',line): continue
-        clean=re.sub(r'^\s*(?:[-*]|\d+[.、])\s*','',line).strip()
+        if line.startswith('###'):
+            if mode=='steps': steps.append('阶段：'+line.lstrip('# ').strip())
+            continue
+        if not line.strip(): continue
+        if mode=='steps' and not re.match(r'^\s*(?:[-*+]|\d+[.、])\s*',line):
+            if not line.startswith('!['): steps.append(line.strip().lstrip('> '))
+            continue
+        if not re.match(r'^\s*(?:[-*+]|\d+[.、])\s*',line): continue
+        clean=re.sub(r'^\s*(?:[-*+]|\d+[.、])\s*','',line).strip()
         if mode=='steps': steps.append(clean)
         if mode=='ingredients':
             hits=[(k,f) for k,f in lookup.items() if k in clean]
             hits.sort(key=lambda h:len(h[0]),reverse=True)
             amount=re.search(r'(\d+(?:\.\d+)?)\s*(kg|千克|公斤|g|克)\b?',clean,re.I) if False else re.search(r'(\d+(?:\.\d+)?)\s*(kg|千克|公斤|g|克)',clean,re.I)
             f=hits[0][1] if hits else None
-            if re.search(r'\d\s*[-~～至]\s*\d|\d.*\+.*\d|\d.*[*/].*\d',clean): amount=None
+            if re.search(r'\d\s*[-~～至到]\s*\d|\d.*(?:克|g)\s*(?:到|至|或)\s*\d|\d.*\+.*\d|\d.*[*/].*\d',clean): amount=None
             grams=float(amount[1])*(1000 if amount[2].lower() in ['kg','千克','公斤'] else 1) if amount else None
             ingredients.append(dict(originalText=clean,foodId=f['id'] if f else None,grams=grams,estimated=bool(re.search('约|大约|估',clean)),confidence='high' if f and grams else 'low',mappingStatus='high-confidence' if f else 'unmapped'))
+    if not ingredients:
+        # A calculation section may only say "1 serving", or use a quantity table.
+        blocks=re.split(r'^##\s+(.+)$',text,flags=re.M)
+        material=next((blocks[n+1] for n in range(1,len(blocks)-1,2) if re.search('原料|材料',blocks[n])), '')
+        ingredient_lines=[]; tool_mode=False
+        for line in material.splitlines():
+            if re.match(r'^###',line):
+                tool_mode=bool(re.search('工具',line)); continue
+            clean=re.sub(r'^\s*[-*+]\s*','',line).strip()
+            if clean in ['工具','原料','材料','工具：','原料：']:
+                tool_mode='工具' in clean; continue
+            if not tool_mode and re.match(r'^\s*[-*+]\s+',line):ingredient_lines.append(clean)
+        for raw in ingredient_lines:
+            ingredients.append(dict(originalText=raw,foodId=None,grams=None,estimated=False,confidence='low',mappingStatus='unmapped'))
+    if not ingredients: raise ValueError('No source ingredients extracted: '+name)
+    steps=[step for step in steps if step.strip()]
     if not steps: steps=[text]
     unique={i['originalText']:i for i in ingredients}; ingredients=list(unique.values())
     imgs=[]
@@ -115,6 +138,24 @@ for path in sorted((repo/'dishes').rglob('*.md')):
             filename=sha(original)[:20]+original.suffix.lower(); shutil.copyfile(original,PUBLIC/filename); imgs.append('recipe-images/'+filename)
     recipes.append(dict(id='htc-'+hashlib.sha256(rel.encode()).hexdigest()[:16],nameZh=name,nameEn='',originalName=name,servings=1,servingsBasis='unknown-needs-review',ingredients=ingredients,steps=steps,image=imgs[0] if imgs else None,imageSource=rel,imageLicense='Unlicense (repository)',source='HowToCook',sourceUrl='https://github.com/Anduin2017/HowToCook/blob/'+COMMIT+'/'+rel,license='Unlicense',sourceRelease=COMMIT,revision=1,tags=[path.parent.name],originalText=text,verified=False))
     recipes[-1]['category']=path.relative_to(repo/'dishes').parts[0]
+    recipes[-1]['images']=list(dict.fromkeys(imgs))
+    blocks=re.split(r'^##\s+(.+)$',text,flags=re.M)
+    recipes[-1]['quantityText']=next((blocks[n+1].strip() for n in range(1,len(blocks)-1,2) if re.search('计算|用量',blocks[n])), '')
+    material=next((blocks[n+1] for n in range(1,len(blocks)-1,2) if re.search('原料|材料',blocks[n])), '')
+    tools=[]; tool_mode=False
+    for line in material.splitlines():
+        if re.match(r'^###',line):tool_mode=bool(re.search('工具',line));continue
+        clean=re.sub(r'^\s*[-*+]\s*','',line).strip()
+        if clean in ['工具','工具：','原料','原料：','调料','调料：']:tool_mode='工具' in clean;continue
+        if tool_mode and re.match(r'^\s*[-*+]\s+',line):tools.append(clean)
+    recipes[-1]['tools']=tools
+    extra=re.split(r'^##\s*(?:附加内容|注意事项|小贴士|补充说明)',text,flags=re.M)
+    recipes[-1]['tips']=[] if len(extra)<2 else [re.sub(r'^\s*[-*+]\s*','',s).strip() for s in extra[1].splitlines() if re.match(r'^\s*[-*+]\s+',s) and not re.search('Issue|Pull request',s,re.I)]
+    intro=text.split('##',1)[0]
+    duration=re.search(r'(?:大约|约|只需|耗时|时间)[^\n\d]{0,8}(\d+)\s*(分钟|小时)',intro)
+    if duration:
+        recipes[-1]['prepMinutes']=int(duration[1])*(60 if duration[2]=='小时' else 1)
+        recipes[-1]['prepTimeBasis']='原方预计时间；以实际操作为准'
 
 # Explicit local combinations, not attributed to HowToCook. All portions are transparent suggestions.
 combos=[('鸡胸西兰花饭','Chicken broccoli rice',[('熟鸡胸肉',160),('白米饭',220),('西兰花',150),('橄榄油',8)]),('燕麦牛奶香蕉','Oats milk banana',[('燕麦片',60),('全脂牛奶',250),('香蕉',100)]),('鸡蛋番茄饭','Egg tomato rice',[('鸡蛋',100),('西红柿',200),('白米饭',200),('菜籽油',8)]),('豆腐蔬菜饭','Tofu vegetable rice',[('豆腐',200),('白米饭',200),('胡萝卜',100),('西兰花',100),('菜籽油',8)]),('酸奶水果碗','Yogurt fruit bowl',[('希腊酸奶',200),('香蕉',100),('杏仁',20)]),('三文鱼米饭','Salmon rice',[('三文鱼',160),('白米饭',200),('西兰花',150),('橄榄油',5)]),('鸡蛋燕麦早餐','Egg oats breakfast',[('鸡蛋',100),('燕麦片',60),('全脂牛奶',200)]),('牛肉蔬菜饭','Beef vegetable rice',[('牛肉',150),('白米饭',200),('胡萝卜',100),('洋葱',60),('菜籽油',5)])]
@@ -139,10 +180,12 @@ combos += [
 ('虾仁豆腐番茄饭','Shrimp tofu tomato rice',[('虾',150),('豆腐',120),('西红柿',150),('白米饭',180),('菜籽油',5)]),
 ('金枪鱼鹰嘴豆沙拉','Tuna chickpea salad',[('金枪鱼',140),('鹰嘴豆',150),('黄瓜',150),('西红柿',150),('橄榄油',5)]),
 ('鸡胸南瓜饭','Chicken pumpkin rice',[('熟鸡胸肉',150),('南瓜',200),('白米饭',200),('菜籽油',6)])]
+guides=read(ROOT/'data/recipe-guides.json')
 for i,(zh,en,parts) in enumerate(combos):
     missing=[name for name,g in parts if name not in lookup]
     if missing: raise ValueError('Missing curated Food mapping: '+str(missing))
-    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText=name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=['称量可食部分；食材生熟状态以食材条目为准，米饭及熟鸡胸肉按熟重。','肉、鱼和鸡蛋充分烹熟；蔬菜洗净煮熟或炒熟；酸奶与水果可直接组合。','按原料组合装盘。用油按实际加入量调整。'],source='Xunlian portion suggestions',sourceUrl='',license='AGPL-3.0',revision=1,verified=True,prepMinutes=10 if any(t in zh for t in ['碗','沙拉']) else 25,prepTimeBasis='应用备餐时间估算，非实测',tags=['应用组合'],notes='建议份量；非原作者食谱，营养按原料计算，未计烹饪损失。'))
+    guide=guides['guides']['xl-combo-'+str(i)]
+    recipes.insert(i,dict(id='xl-combo-'+str(i),nameZh=zh,nameEn=en,servings=1,ingredients=[dict(foodId=lookup[name]['id'],originalText='牛肉末（90%瘦肉）' if name=='牛肉' else name,grams=g,estimated=True,confidence='medium',mappingStatus='user-resolved') for name,g in parts],steps=guide['steps'],tools=guide['tools'],tips=guide['tips'],source='OpenGym EX 应用组合',sourceUrl='',license='AGPL-3.0',revision=2,verified=True,prepMinutes=guide['prepMinutes'],prepTimeBasis='应用烹饪时间估算，使用现成的熟米饭、熟鸡胸肉及熟豆粒；从生料开始需加时间',cookingBasis=guides['basis'],safetySource=guides['safetySource'],tags=['应用组合'],notes='建议份量；非原作者食谱，营养按材料表计算，未计烹饪损失；步骤中额外加入的调味料需单独计入。'))
 write(OUT/'recipes.json',recipes)
 
 # Conservative Chinese names: reviewed common exercises plus compositional glossary, with provenance.

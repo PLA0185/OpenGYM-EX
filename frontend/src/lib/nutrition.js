@@ -1,4 +1,5 @@
 // Pure nutrition mathematics. Missing measurements stay missing; source numbers are per 100 g.
+import { recipeSnapshot } from './recipe-guide.js'
 export const NUTRIENTS = ['kcal', 'proteinG', 'carbsG', 'fatG', 'fiberG', 'sodiumMg', 'potassiumMg', 'calciumMg', 'ironMg']
 export const clone = value => JSON.parse(JSON.stringify(value))
 export const positive = (n, max = 100000) => typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= max
@@ -44,9 +45,10 @@ export function mealSnapshot(recipe, foods, servings, date, slot, id) {
   const result = recipeNutrition(recipe, foods, servings)
   if (!result.complete || !Number.isFinite(result.nutrition.kcal)) throw new Error('Recipe needs ingredient mapping and grams')
   return { id, date, slot, recipeId: recipe.id, recipeRevision: recipe.revision || 1, nameZh: recipe.nameZh, nameEn: recipe.nameEn, servings, nutritionSnapshot: result.nutrition,
-    ingredientsSnapshot: clone(recipe.ingredients).map(i => ({ ...i, grams: i.grams * servings / recipe.servings })), nutritionSourceVersion: result.sourceVersions, estimated: result.estimated }
+    ingredientsSnapshot: clone(recipe.ingredients).map(i => ({ ...i, grams: i.grams * servings / recipe.servings })), recipeSnapshot:recipeSnapshot(recipe), nutritionSourceVersion: result.sourceVersions, estimated: result.estimated }
 }
 export function dailyTotals(entries, date) { return sumNutrition(entries.filter(m => m.date === date && m.status !== 'skipped').map(m => m.nutritionSnapshot)) }
+export const purchaseChecked=(item,checked)=>Number.isFinite(checked?.[item.foodId])&&Math.abs(checked[item.foodId]-item.grams)<.05
 export function shoppingList(meals) {
   const grouped = new Map(), unresolved = []
   meals.forEach(m => (m.ingredientsSnapshot || []).forEach(i => {
@@ -65,7 +67,7 @@ export const localDate = (d = new Date()) => [d.getFullYear(), String(d.getMonth
 export function monday(date = localDate()) { const d = new Date(date + 'T12:00:00'); d.setDate(d.getDate() - (d.getDay()+6)%7); return localDate(d) }
 export function emptyXunlian() {
   return { schemaVersion: 1, revision: 0, profile: { goal: 'maintain', activity: 1.4, mealCount: 3, allergies: '', dislikedFoods: '', budget: '', equipment: '', limitations: '', trainingTime: '18:30', sleepSchedule: '', cookingAvailability: '' }, target: null,
-    foods: [], recipes: [], meals: [], logs: [], programs: [], exerciseAliases: {}, foodAliases: {}, favorites: [], drafts: [], proposals: [], snapshots: [], healthSamples:[], healthLastSync:null, ai: { enabled: false, model: 'deepseek-flash' }, nutritionNeedsReview: false }
+    foods: [], recipes: [], meals: [], logs: [], programs: [], exerciseAliases: {}, foodAliases: {}, favorites: [], shoppingChecked: {}, drafts: [], proposals: [], snapshots: [], healthSamples:[], healthLastSync:null, ai: { enabled: false, model: 'deepseek-flash' }, nutritionNeedsReview: false }
 }
 export const searchFood = (food, q) => [food.nameZh, food.nameEn, ...(food.aliasesZh||[]), ...(food.aliasesEn||[])].some(x => x?.toLowerCase().includes(q.toLowerCase().trim()))
 export function planningContext(S) {
