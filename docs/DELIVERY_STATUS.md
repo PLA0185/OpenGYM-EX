@@ -38,7 +38,7 @@ Android包名app.xunlian.personal，min26/target36，原证书SHA256：`100d6bb2
 
 [私人main](https://github.com/PLA0185/xunlian-2)保存源码及V10。[phase-2.0.6私人Release](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.6)保存双端包、交接文档、验证报告/模拟截图、SHA256与加密签名vault。未改变的source-cache.zip和media-preview.zip保留在[phase-2.0.4](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.4)，新机下载后bootstrap恢复8个锁定原始来源。
 
-签名恢复口令在旧机.private-signing/migration-recovery.txt，须单独带走，不上传。用户Key/训练饮食健康记录不属于源码发布；App设置导出JSON用于个人迁移。CI结果按该阶段实际提交运行记录核对。
+签名恢复口令在旧机.private-signing/migration-recovery.txt，须单独带走，不上传。用户Key/训练饮食健康记录不属于源码发布；App设置导出JSON用于个人迁移。本阶段源码提交`7ca7319531b5765e7f30d1c9e9e7f06606f04282`。[GitHub CI](https://github.com/PLA0185/xunlian-2/actions/runs/36786276045)已全部PASS（前端、API、API容器构建）；报告artifacts/verification-ci.json。
 
 ## 真实边界
 
