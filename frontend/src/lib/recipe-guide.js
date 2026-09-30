@@ -9,5 +9,5 @@ export function recipeForMeal(meal,recipes){
   if(meal.recipeSnapshot&&(!current||current.revision!==meal.recipeRevision))return meal.recipeSnapshot
   if(current)return current
   if(!meal.ingredientsSnapshot?.length)return null
-  return {id:meal.recipeId,nameZh:meal.nameZh,nameEn:meal.nameEn,servings:1,ingredients:meal.ingredientsSnapshot.map(i=>({...i,grams:i.grams/(meal.servings||1)})),steps:[],notes:'此旧记录没有保存做法，原菜谱已移除。食材与营养快照仍保留。',source:'餐食记录快照',revision:meal.recipeRevision}
+  return {id:meal.recipeId,nameZh:meal.nameZh,nameEn:meal.nameEn,servings:1,ingredients:meal.ingredientsSnapshot.map(i=>({...i,grams:i.grams/(meal.servings||1)})),steps:[],notes:meal.photoAnalysis?'照片识别的估算食材，不是菜谱，没有烹饪步骤；'+meal.photoAnalysis.notes.join('；'):'此旧记录没有保存做法，原菜谱已移除。食材与营养快照仍保留。',source:'餐食记录快照',revision:meal.recipeRevision}
 }

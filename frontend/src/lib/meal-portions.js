@@ -1,29 +1,38 @@
-import { recipeNutrition } from './nutrition.js'
+import { recipeNutrition, sumNutrition, scaleNutrition, nutritionFits } from './nutrition.js'
 import { validateMeals } from './planning-engine.js'
 import { feasibleMenu } from './assistant-plan.js'
 import { recipeCost } from './meal-cost.js'
-const fits=(parts,target,profile)=>{const kcal=parts.reduce((a,p)=>a+p.kcal*p.servings,0),protein=parts.reduce((a,p)=>a+p.proteinG*p.servings,0);return Math.abs(kcal-target.kcal)<=target.kcal*.2&&Math.abs(protein-target.proteinG)<=Math.max(20,target.proteinG*.3)&&(!(profile.dailyBudgetCny>0)||parts.some(p=>p.cost==null)||parts.reduce((sum,p)=>sum+p.cost*p.servings,0)<=profile.dailyBudgetCny+.01)}
+const fits=(parts,target,profile)=>nutritionFits(sumNutrition(parts.map(p=>scaleNutrition(p,p.servings))),target)&&(!(profile.dailyBudgetCny>0)||parts.some(p=>p.cost==null)||parts.reduce((sum,p)=>sum+p.cost*p.servings,0)<=profile.dailyBudgetCny+.01)
 // Solve portions using catalog nutrition, not model arithmetic. Never weaken
 // exclusions/reference validation or invent nutrient data to get a passing plan.
 export function fitPortions(meals,recipes,foods,target,profile={}){
   const parts=meals.map(m=>{const r=recipes.find(r=>r.id===m.recipeId);return {...m,...recipeNutrition(r,foods).nutrition,cost:recipeCost(r,profile)}})
   if(fits(parts,target,profile))return meals
+  return fitNutritionPortions(parts,target,profile)?.map((p,i)=>({...meals[i],servings:p.servings}))??null
+}
+// Also used for saved meal snapshots, including fixed actual intake. A fixed
+// portion is never changed to make the arithmetic pass.
+export function fitNutritionPortions(parts,target,profile={}){
+  if(fits(parts,target,profile))return parts
   let best=null,score=Infinity
   const consider=servings=>{
     if(servings.some(s=>!Number.isFinite(s)||s<.1||s>20))return
+    if(servings.some((s,i)=>parts[i].fixed&&Math.abs(s-parts[i].servings)>1e-8))return
     // Keep enough precision so rounding cannot undo a correct calculation.
     const rounded=servings.map(s=>Math.round(s*10000)/10000)
     if(!fits(parts.map((p,i)=>({...p,servings:rounded[i]})),target,profile))return
     const distance=rounded.reduce((a,s,i)=>a+Math.abs(s-parts[i].servings)/Math.max(.1,parts[i].servings),0)
-    if(distance<score){score=distance;best=meals.map((m,i)=>({...m,servings:rounded[i]}))}
+    if(distance<score){score=distance;best=parts.map((p,i)=>({...p,servings:rounded[i]}))}
   }
   const sumK=parts.reduce((a,p)=>a+p.kcal*p.servings,0),scale=target.kcal/sumK
-  consider(parts.map(p=>p.servings*scale))
+  const fixedK=parts.filter(p=>p.fixed).reduce((a,p)=>a+p.kcal*p.servings,0),freeK=sumK-fixedK
+  consider(parts.map(p=>p.fixed?p.servings:p.servings*(target.kcal-fixedK)/freeK))
   for(let i=0;i<parts.length;i++)for(let j=i+1;j<parts.length;j++){
     const a=parts[i],b=parts[j],det=a.kcal*b.proteinG-b.kcal*a.proteinG
+    if(a.fixed||b.fixed)continue
     if(Math.abs(det)<1e-8)continue
     for(const baseScale of [1,scale,.5,1.5]){
-      const portions=parts.map(p=>Math.min(20,Math.max(.1,p.servings*baseScale)))
+      const portions=parts.map(p=>p.fixed?p.servings:Math.min(20,Math.max(.1,p.servings*baseScale)))
       const other=parts.reduce((tot,p,k)=>k===i||k===j?tot:{kcal:tot.kcal+p.kcal*portions[k],protein:tot.protein+p.proteinG*portions[k]},{kcal:0,protein:0})
       const k=target.kcal-other.kcal,p=target.proteinG-other.protein
       portions[i]=(k*b.proteinG-b.kcal*p)/det;portions[j]=(a.kcal*p-k*a.proteinG)/det

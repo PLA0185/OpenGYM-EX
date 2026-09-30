@@ -1,10 +1,13 @@
 import { EXDB } from './exercises-data.js'
 import { t } from './i18n.js'
 import names from '../data/exercise-names.json'
+import { needsPartner } from './solo-exercises.js'
+import { KNOWLEDGE_EXERCISES } from './knowledge-exercises.js'
 
 export { EXDB }
 export const EXIDX = {}
 EXDB.forEach(e => { Object.assign(e, names[e.id] || { nameEn: e.n, nameZh: e.n }); EXIDX[e.id] = e })
+KNOWLEDGE_EXERCISES.forEach(e=>{EXIDX[e.id]=e})
 export const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort()
 
 // Equipment options present in a given list of exercises, most common first (issue #6).
@@ -25,7 +28,7 @@ export function registerCustom(list) {
   ;(list || []).forEach(e => { EXIDX[e.id] = { ...e, nameZh: e.nameZh || e.n, nameEn: e.nameEn || '' } })
 }
 // Full searchable catalogue — customs first so your own exercises are easy to find.
-export const allExercises = st => [...(st.customEx || []).map(e => EXIDX[e.id] || e), ...EXDB]
+export const allExercises = st => [...(st.customEx || []).map(e => EXIDX[e.id] || e), ...EXDB,...KNOWLEDGE_EXERCISES].filter(e=>!needsPartner(e))
 export const exerciseName = ex => ex ? (ex.nameZh && ex.nameZh !== (ex.nameEn || ex.n) ? ex.nameZh + ' · ' + (ex.nameEn || ex.n || '') : ex.n) : ''
 export const exerciseMatches = (e, q) => [e.n, e.nameEn, e.nameZh, ...(e.aliasesZh || []), ...(e.aliasesEn || [])].some(n => n?.toLowerCase().includes(q))
 

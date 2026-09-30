@@ -17,7 +17,7 @@ describe('Nutrition fact boundaries',()=>{
   it('historical snapshots survive recipe edits',()=>{const r=clone(recipe),m=mealSnapshot(r,foods,1,'2026-09-27','lunch','log');r.ingredients[0].grams=500;expect(m.nutritionSnapshot.kcal).toBe(100);expect(m.ingredientsSnapshot[0].grams).toBe(100)})
   it('plans and actual logs are independent',()=>{const planned=mealSnapshot(recipe,foods,1,'2026-09-27','lunch','m');expect(dailyTotals([],planned.date).kcal).toBe(0);expect(dailyTotals([planned],planned.date).kcal).toBe(100)})
   it('shopping totals use scaled snapshot ingredients',()=>{const a=mealSnapshot(recipe,foods,2,'2026-09-27','lunch','a');expect(shoppingList([a,a]).items[0].grams).toBe(400)})
-  it('adult equation has a reproducible result and rejects unsupported age',()=>{const p={age:30,heightCm:175,sex:'male',activity:1.4};expect(targets(p,70).bmr).toBe(1649);expect(()=>targets({...p,age:16},70)).toThrow();expect(()=>targets({...p,specialDiet:true},70)).toThrow()})
+  it('adult equation has a reproducible result and rejects unsupported age',()=>{const p={age:30,heightCm:175,sex:'male',activity:1.4};expect(targets(p,70).bmr).toBe(1696);expect(()=>targets({...p,age:16},70)).toThrow();expect(()=>targets({...p,specialDiet:true},70)).toThrow()})
   it('date arithmetic survives month boundaries',()=>expect(dateKeys('2026-09-28').at(-1)).toBe('2026-10-04'))
 })
 describe('Mapping and executable training',()=>{

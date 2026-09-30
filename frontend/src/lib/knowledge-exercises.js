@@ -1,0 +1,38 @@
+// Timed activities explicitly named in the loaded 全民健身指南. No fabricated
+// demonstration media or detailed martial-arts instruction is supplied.
+const sourceUrl='https://www.sport.gov.cn/n315/n20067006/c20324479/content.html'
+export const KNOWLEDGE_EXERCISES=[
+  ['walking','健步走','Brisk walking','按能正常交流的强度起步，选择平整路线。'],
+  ['jogging','慢跑','Jogging','先走后跑，按已有基础控制速度；不适时停止。'],
+  ['cycling','骑自行车','Cycling','检查车辆与路线，循序增加骑行时间。'],
+  ['basketball','篮球单人运球练习','Solo basketball dribbling','选择安全平整场地，进行已有基础的单人运球；不安排对抗比赛。'],
+  ['taichi','太极拳练习','Tai chi practice','按已学习的规范套路练习；初学者先跟随合格教学，本应用不编造完整套路。'],
+  ['baduanjin','八段锦练习','Baduanjin practice','按已学习的规范八段锦练习，不憋气；此条用于计时，不冒充动作教学。'],
+  ['hiking','登山步行','Hiking','选择熟悉路线和适合自己的坡度，注意天气和路面。'],
+  ['stairs','爬楼梯','Stair climbing','扶手可用、路面干燥；从少量楼层开始，不追求速度。'],
+  ['swimming','游泳','Swimming','仅在有救生员的正规场所、具备游泳能力时练习；不会游泳先学技能。'],
+  ['running','跑步','Running','有慢跑基础后再提高速度，不把高强度作为新手默认。'],
+  ['fast-cycling','进阶骑行','Advanced cycling','先有普通骑行基础，再按路线和恢复调整速度。'],
+  ['football','足球单人控球练习','Solo football ball control','练习已有基础的控球，不安排比赛或身体对抗。'],
+  ['rugby','橄榄球单人技能练习','Solo rugby skills','仅练习已掌握的基础持球技能，不安排冲撞或擒抱。'],
+  ['hockey','曲棍球单人控球练习','Solo field hockey ball control','使用合适器材与场地，仅练习已掌握的单人控球。'],
+  ['ice-hockey','冰球单人技能练习','Solo ice hockey skills','需有滑冰基础与完整防护，仅在正规场地练习，不安排对抗。'],
+  ['volleyball','排球单人垫球练习','Solo volleyball practice','练习已掌握的垫球技巧，本条仅用于个人练习。'],
+  ['table-tennis','乒乓球单人技能练习','Solo table tennis practice','使用发球机或安全的单人练习条件，不把比赛计为单人训练。'],
+  ['badminton','羽毛球单人步法练习','Solo badminton footwork','按已学习的规范步法练习，先控制速度和场地间距。'],
+  ['tennis','网球单人技能练习','Solo tennis practice','使用合适场地的练习墙或发球机，按已有基础练习。'],
+  ['gateball','门球单人击球练习','Solo gateball practice','在允许的场地练习基础击球，注意周边人员。'],
+  ['rouliball','柔力球单人练习','Solo rouliball practice','按已学习的套路练习，留出器材运动空间。'],
+  ['taichi-sword','太极剑练习','Tai chi sword practice','需先学习规范套路，使用练习器材并留出安全空间。'],
+  ['mulan','木兰拳练习','Mulan boxing practice','按已学习的规范套路练习，本条仅用于活动计时。'],
+  ['mulan-sword','木兰剑练习','Mulan sword practice','按已学习的规范套路练习，使用练习器材并留出安全空间。'],
+  ['wushu','武术套路练习','Wushu forms practice','按已掌握的套路练习，不编排搏击、对抗或高难度技巧。'],
+  ['wuqinxi','五禽戏练习','Wuqinxi practice','按已学习的规范套路练习，不憋气或强行拉伸。'],
+  ['yijinjing','易筋经练习','Yijinjing practice','按已学习的规范套路练习，保持舒适呼吸。'],
+  ['liuzijue','六字诀练习','Liuzijue practice','按已学习的规范方法练习，不憋气。'],
+  ['dynamic-stretch','动态牵拉练习','Dynamic stretching','具有柔韧基础后，按已学习的方式缓慢活动，不弹震或强行踢高。'],
+  ['aerobics','有氧健身操','Aerobic exercise routine','选择已学会的低冲击编排，按自身基础调整幅度。'],
+  ['fitness-dance','健美操练习','Fitness dance practice','跟随已掌握的规范编排，避免陌生的高冲击动作。'],
+  ['yoga','瑜伽基础练习','Basic yoga practice','按已学习的基础体式练习，不安排倒立或强行压伸。'],
+  ['balance','单人平衡练习','Solo balance practice','在平整场地、稳定扶手旁练习已学会的简单平衡动作。']
+].map(([key,nameZh,nameEn,note])=>({id:'knowledge-'+key,n:nameEn.toLowerCase(),nameEn,nameZh,bp:'cardio',eq:'body weight',tg:'cardiovascular system',sm:[],st:[note,'开始前热身，结束后放松；时长是可编辑的参考安排。'],custom:true,knowledge:true,sourceUrl,translationSource:'manual',desc:'知识库活动计时；暂无动作媒体。'}))

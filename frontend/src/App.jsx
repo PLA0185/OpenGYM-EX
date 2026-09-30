@@ -15,6 +15,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import RestTimer from './components/RestTimer.jsx'
+import BalanceNotice from './components/BalanceNotice.jsx'
 import Login from './views/Login.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
@@ -28,6 +29,7 @@ import Admin from './views/Admin.jsx'
 import Coach from './views/Coach.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
 import CoachProposal from './views/CoachProposal.jsx'
+const PhotoMeal=lazy(()=>import('./views/PhotoMeal.jsx'))
 const Nutrition=lazy(()=>import('./views/Nutrition.jsx'))
 const WeeklyMeals=lazy(()=>import('./views/Nutrition.jsx').then(m=>({default:m.WeeklyMeals})))
 const JointPlanning=lazy(()=>import('./views/JointPlanning.jsx'))
@@ -78,6 +80,7 @@ function Shell() {
       {/* keyed on the route: a view that throws is contained, and switching tabs
           re-mounts the boundary, so the tab bar is always a way out */}
       <div id="app" className="vfade" key={loc.pathname}>
+        {authed&&<BalanceNotice/>}
         <ErrorBoundary>
         <Suspense fallback={<p className="sect-f">正在载入离线资料…</p>}>
           {!authed ? <Login /> : !S.xunlian.profile.onboardingCompleted && !S.active ? <Onboarding/> : (
@@ -90,6 +93,7 @@ function Shell() {
               <Route path="/history" element={<History />} />
               <Route path="/library" element={<Library />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/nutrition/photo" element={<PhotoMeal />} />
               <Route path="/nutrition" element={<Nutrition />} />
               <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/health" element={<Health />} />

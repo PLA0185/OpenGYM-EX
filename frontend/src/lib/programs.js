@@ -1,5 +1,17 @@
 import { positive, clone, planningContext, dailyTotals, localDate } from './nutrition.js'
 import { resolvePrescription } from './prescription.js'
+import { needsPartner } from './solo-exercises.js'
+import { initialLoad } from './initial-load.js'
+export function prefillProgram(S,program,exercises){
+  const p=clone(program)
+  p.days=p.days.map(d=>({...d,exerciseItems:d.exerciseItems.map(item=>{
+    const ex=exercises.find(e=>e.id===item.exerciseId),resolved=resolvePrescription(S,item,ex,p)
+    if(resolved.weight!=null)return item.weight!=null?item:{...item,weight:resolved.weight,weightUnit:S.unit||'kg',estimatedFields:[...new Set([...(item.estimatedFields||[]),'weight'])]}
+    const trial=initialLoad(S.xunlian.profile,ex,S.unit)
+    return trial?{...item,weight:trial.weight,weightUnit:S.unit||'kg',suggestedPercent1RM:item.percent1RM??null,percent1RM:null,estimatedFields:[...new Set([...(item.estimatedFields||[]),'weight','percent1RM'])],notes:[item.notes,'缺少1RM基线，已预填轻负重试练起点；此重量不等于指南的百分比负荷。',trial.note].filter(Boolean).join(' ')}:item
+  })}))
+  return p
+}
 export function validateProgram(p, exercises) {
   if (!p.nameZh || !p.days?.length || p.days.length > 7) throw new Error('Invalid program')
   const ids = new Set(exercises.map(e => e.id))
@@ -8,6 +20,7 @@ export function validateProgram(p, exercises) {
     if (!Number.isInteger(d.weekday) || d.weekday < 0 || d.weekday > 6 || weekdays.has(d.weekday) || !d.exerciseItems?.length) throw new Error('Invalid training day')
     weekdays.add(d.weekday)
     d.exerciseItems.forEach(e => {
+      if(needsPartner(exercises.find(x=>x.id===e.exerciseId)))throw new Error('这个动作需要同伴辅助，请替换为单人可完成的动作。')
       if (!ids.has(e.exerciseId) || !['exact','high-confidence','user-resolved'].includes(e.mappingStatus)) throw new Error('Resolve exercise mapping')
       if (!positive(e.sets, 30) || !Number.isInteger(e.sets) || !(positive(e.reps ?? e.repsMax, 100) || positive(e.durationSec, 3600))) throw new Error('Complete sets and reps/time')
       if(exercises.find(x=>x.id===e.exerciseId)?.bp==='cardio' && !positive(e.durationSec,3600))throw new Error('Cardio needs duration in seconds')

@@ -3,7 +3,7 @@
 const levels={inactive:0,occasional:1,trained:2,regular:3}
 export function initialLoad(profile,exercise,unit='kg') {
   if(!profile?.onboardingCompleted||!Number.isFinite(profile.age)||profile.age<18||profile.age>65||profile.specialDiet||!['','无','没有','none'].includes(String(profile.limitations||'').trim().toLowerCase()))return null
-  const level=levels[profile.fitnessLevel]
+  const level=levels[profile.fitnessLevel||'inactive']
   if(level==null)return null
   const eq=exercise?.eq||'',name=(exercise?.nameEn||exercise?.n||'').toLowerCase()
   if(/assisted|weighted|sled|olympic|smith|band|cardio|roller|wheel|rope/.test(eq))return null

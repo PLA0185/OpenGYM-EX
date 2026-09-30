@@ -1,5 +1,7 @@
 # 构建、运行与更新
 
+当前阶段2.0.6（2026-10-01）；执行范围以V10任务书与DELIVERY_STATUS为准。下方2.0.1–2.0.5章节为历史记录。
+
 本次开发环境为 Windows x64，Node.js + Python 3，JDK 21，Android SDK 36，AGP 8.10.1，Gradle wrapper 8.14.3。默认 Android 工具位置为 `D:/DeepSeekHarnessData/jdk-21`、`D:/DeepSeekHarnessData/android-sdk`，脚本优先使用已设置的 JAVA_HOME、ANDROID_HOME。Node 和 Python 在 PATH。Electron 与 Android 插件的精确版本以 package-lock.json 为准；Android 要求最低 API 26。
 
 ## 数据与依赖
@@ -23,9 +25,9 @@ Set-Location ..
 pwsh -NoProfile -File scripts/build-release.ps1
 ```
 
-Windows：`artifacts/windows/OpenGymEX-2.0.5-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
+Windows：`artifacts/windows/OpenGymEX-2.0.6-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
 
-Android：`artifacts/OpenGymEX-2.0.5-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.5-dev / versionCode 20005，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.5-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
+Android：`artifacts/OpenGymEX-2.0.6-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.6-dev / versionCode 20006，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.6-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
 
 Android 签名证书 SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。
 
@@ -72,7 +74,7 @@ Windows便携EXE包含大量离线媒体，启动前需解包。2.0.0采用嵌�
 
 ## 2.0.5 补充验证与迁移
 
-当前状态以DELIVERY_STATUS和V9任务书为准。原始大数据不进Git，已保存到私人Release的source-cache.zip；新机解压到项目根后bootstrap可直接使用8份锁定来源，不依赖重下载。
+该历史阶段以V9为范围；当前以DELIVERY_STATUS和V10任务书为准。原始大数据不进Git，已保存到私人Release的source-cache.zip；新机解压到项目根后bootstrap可直接使用8份锁定来源，不依赖重下载。
 
 ```powershell
 Set-Location D:/OpenGYM-EX
@@ -80,7 +82,7 @@ node scripts/data/validate-seed.mjs
 python scripts/data/test-hd-media.py
 node --test scripts/howtocook-local.test.mjs
 python scripts/verify-apk.py
-node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.5-portable.exe
+node scripts/verify-windows.mjs artifacts/windows/OpenGymEX-2.0.6-portable.exe
 ```
 
 Windows验证器的可选参数是实际EXE路径，不是--portable标记。默认验证目录包；发布前验证最终便携EXE。Android验证器优先环境JDK/SDK（否则本机默认路径），核对签名、版本、原生返回插件、素材/NOTICE与最终dist逐文件一致，输出artifacts/verification-apk.json。
@@ -92,3 +94,9 @@ Windows验证器的可选参数是实际EXE路径，不是--portable标记。默
 ## 2.0.5 做菜与采购
 
 全部402道配方的食材和做法由build-seed.py生成；应用逐道细节在data/recipe-guides.json。做法组件RecipeCooking复用于正式餐食、AI草稿与在线预览。recipe-guide.js保存餐食做法快照，xunlian-state.js验证恢复。采购勾选是xunlian.shoppingChecked，按周保存Food ID及当时克数；用量变化需要重新核对。Windows实际包验证加入做法可达、逐步前进、360像素采购行宽、已购买分组和重载保留。
+
+## 2.0.6 当前验证
+
+前端21文件/364项，API56项；种子、语言、高清导入fixture、本机HowToCook HTTP和生成目录一致性检查。Windows实际便携包使用隔离合成档案与模拟AI，新增独立日期卡、照片估算流程、计划份数不计入实际、完整知识目录及动态告知检查；报告为artifacts/verification-windows.json。Android原证书与最终dist逐文件一致性报告为artifacts/verification-apk.json。原生相机和真实视觉账号仍需真机复测。
+
+本版没有新增运行依赖。视觉调用复用DeepSeek适配器；使用deepseek-flash图像输入，保留原文本模型设置。业务计算入口为nutrition.js / dynamic-balance.js，计划覆盖入口为knowledge-programs.js。不得将测试用合成图片当作真实食物识别准确率报告。

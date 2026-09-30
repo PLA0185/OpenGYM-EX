@@ -28,7 +28,7 @@ const json = JSON.stringify({ generated_from: 'frontend/src/lib/exercises-data.j
 
 if (process.argv.includes('--check')) {
   let current = null;
-  try { current = readFileSync(out, 'utf8'); } catch { /* missing counts as stale */ }
+  try { current = readFileSync(out, 'utf8').replace(/\r\n/g, '\n'); } catch { /* missing counts as stale */ }
   if (current !== json) {
     console.error('api/coach/library.json is out of date — run: node scripts/build-coach-library.mjs');
     process.exit(1);

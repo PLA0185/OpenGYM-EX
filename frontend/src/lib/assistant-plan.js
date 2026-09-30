@@ -1,8 +1,10 @@
 import { validateProgram,analyzeProgram } from './programs.js'
-import { recipeNutrition,clone } from './nutrition.js'
+import { recipeNutrition,clone, sumNutrition, scaleNutrition, nutritionFits } from './nutrition.js'
 import { requiredMealSlots } from './meal-slots.js'
 import { recipeCost } from './meal-cost.js'
+import { needsPartner } from './solo-exercises.js'
 export function coachCatalog(exercises,profile){
+  exercises=exercises.filter(e=>!needsPartner(e))
   const avoids=String(profile.avoidExercises||'').split(/[、,，;；\n]+/).map(t=>t.trim().toLowerCase()).filter(s=>s&&!['无','没有','none'].includes(s))
   const home=profile.trainingPlace==='home',equipment=home?new Set(['body weight',...(profile.homeEquipment||[])]):null
   return exercises.filter(e=>(!equipment||equipment.has(e.eq))&&!avoids.some(term=>(e.nameZh+' '+(e.nameEn||e.n)).toLowerCase().includes(term))&&(!profile.lowImpact||!/jump|burpee|run|plyo|sprint|跳|跑/.test((e.nameEn+' '+e.nameZh).toLowerCase()))&&(!['inactive','occasional'].includes(profile.fitnessLevel)||!/guillotine|behind neck|planche|handstand|muscle.?up|iron cross|maltese|skin the cat|snatch|jerk|pistol|倒立|水平支撑|双力臂/.test((e.nameEn+' '+e.nameZh).toLowerCase())))
@@ -26,13 +28,12 @@ export function feasibleMenu(recipes,foods,target,{usage={},repeatLimit=null,pro
   const slots=requiredMealSlots(profile)
   const candidates=recipes.slice(0,40).map(r=>({r,n:recipeNutrition(r,foods).nutrition})).filter(({n})=>n.kcal>0&&Number.isFinite(n.proteinG))
   for(const a of candidates)for(const b of candidates)for(const c of candidates){
-    const picks=slots.map((_,i)=>[a,b,c][i%3]),fractions=slots.length===3?[.25,.35,.4]:slots.map(()=>1/slots.length)
+    const picks=slots.map((_,i)=>[a,b,c][i%3]),fractions=slots.length===3?[.3,.4,.3]:slots.map(()=>1/slots.length)
     if(repeatLimit!=null){const counts={...usage};for(const x of picks)counts[x.r.id]=(counts[x.r.id]||0)+1;if(Object.values(counts).some(n=>n>repeatLimit))continue}
     const parts=picks.map(({r,n},i)=>({recipeId:r.id,servings:Math.round(target.kcal*fractions[i]/n.kcal*100)/100,n,cost:recipeCost(r,profile)}))
     if(parts.some(p=>p.servings<.1||p.servings>20))continue
     if(profile.dailyBudgetCny>0&&parts.every(p=>p.cost!=null)&&parts.reduce((sum,p)=>sum+p.cost*p.servings,0)>profile.dailyBudgetCny)continue
-    const kcal=parts.reduce((n,p)=>n+p.n.kcal*p.servings,0),protein=parts.reduce((n,p)=>n+p.n.proteinG*p.servings,0)
-    if(Math.abs(kcal-target.kcal)<=target.kcal*.2&&Math.abs(protein-target.proteinG)<=Math.max(20,target.proteinG*.3))return parts.map(({n,cost,...p},i)=>({...p,slot:slots[i]}))
+    if(nutritionFits(sumNutrition(parts.map(p=>scaleNutrition(p.n,p.servings))),target))return parts.map(({n,cost,...p},i)=>({...p,slot:slots[i]}))
   }
   return null
 }

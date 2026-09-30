@@ -1,0 +1,24 @@
+import { describe,it,expect } from 'vitest'
+import { targets,activityLevel,nutritionFits,planningTarget,NUTRITION_POLICY,planningContext,emptyXunlian,dailyTotals,clone } from './nutrition.js'
+import { eligibleRecipes,validateMeals,applyJoint } from './planning-engine.js'
+import { feasibleMenu } from './assistant-plan.js'
+import { balanceCoachMeals } from './meal-portions.js'
+import { coachTarget } from './coach-workflow.js'
+import { builtInPrograms } from './programs.js'
+import { EXDB } from './exercises-data.js'
+import foods from '../data/foods.json'
+import recipes from '../data/recipes.json'
+const profile={age:24,heightCm:172,sex:'male',activity:1.5,goal:'lose',weightKg:85}
+const state=()=>({unit:'kg',routines:[],week:{},dayPlan:{},workouts:[],bodyweight:[],xunlian:{...emptyXunlian(),profile}})
+describe('published Chinese guidance and intake linkage',()=>{
+  it('uses the exact NHC appendix equation and distinguishes daily intake from basal expenditure',()=>{const t=targets(profile,85);expect(t.bmr).toBe(1927);expect(t.tdee).toBe(2891);expect(t.kcal).toBe(2313);expect(t.intakeFactor).toBe(.8);expect(t.deficitKcal).toBe(578);expect(t.basis).not.toContain('Mifflin');expect(t.kcal).toBeGreaterThan(t.bmr);expect(t.nutritionPolicy).toBe(NUTRITION_POLICY)})
+  it('applies 85% only for overweight and never applies the obese restriction to normal or low weight',()=>{expect(targets(profile,75).intakeFactor).toBe(.85);expect(targets(profile,65).intakeFactor).toBe(1);expect(targets(profile,50).intakeFactor).toBe(1);expect(targets({...profile,goal:'gain'},85).intakeFactor).toBe(1)})
+  it('matches the published female coefficients without treating the value as measured',()=>{const t=targets({...profile,sex:'female'},85);expect(t.bmr).toBe(1659);expect(t.kcal).toBe(1991);expect(t.notes.join()).toContain('预测值')})
+  it('keeps macro energy consistent and all default ratios in the selected official ranges',()=>{for(const sex of ['male','female'])for(const goal of ['lose','maintain','gain'])for(const weight of [65,75,85]){const t=targets({...profile,sex,goal},weight);expect(nutritionFits(t,t)).toBe(true);expect(Math.abs(t.proteinG*4+t.fatG*9+t.carbsG*4-t.kcal)).toBeLessThan(2)}})
+  it('does not infer daily PAL from the number of gym days or add wearable calories on top',()=>{const a=targets({...profile,trainingDays:2,trainingDuration:30},85),b=targets({...profile,trainingDays:5,trainingDuration:90},85);expect(a.kcal).toBe(b.kcal);expect(a.trainingBasis).not.toEqual(b.trainingBasis);expect(activityLevel(1.4)).toBe(1.5);expect(()=>activityLevel(3)).toThrow()})
+  it('recalculates estimates using current weight including pound conversion, preserving explicit manual targets',()=>{const s=state();s.xunlian.target=targets(profile,85);s.unit='lb';s.bodyweight=[{w:154.32358353,d:'2026-10-01'}];const p=planningContext(s),t=planningTarget(s,p);expect(p.weightKg).toBeCloseTo(70);expect(t.inputs.weightKg).toBeCloseTo(70);expect(t.kcal).not.toBe(s.xunlian.target.kcal);s.xunlian.target={kcal:2200,proteinG:110,fatG:60,carbsG:305,basis:'manual'};expect(planningTarget(s,p)).toEqual(s.xunlian.target)})
+  it('refreshes legacy calculated policy instead of reusing a stale target',()=>{const s=state();s.xunlian.target={kcal:2200,proteinG:136,fatG:68,carbsG:260,basis:'Mifflin-St Jeor'};expect(coachTarget(s,profile).nutritionPolicy).toBe(NUTRITION_POLICY)})
+  it('rejects supported-looking energy/protein with excessive fat, not only nonexistent recipe IDs',()=>{const t=targets(profile,85);expect(nutritionFits({...t,fatG:150,carbsG:60},t)).toBe(false);expect(nutritionFits({...t,kcal:t.kcal*1.15},t)).toBe(false)})
+  it('produces a fully source-calculated seven-day menu within energy and macro constraints',()=>{const t=targets(profile,85),options=eligibleRecipes(recipes,foods,profile),menu=feasibleMenu(options,foods,t,{profile});expect(menu).not.toBeNull();const dates=Array.from({length:7},(_,i)=>'2026-10-0'+(i+1)),result={meals:dates.flatMap(date=>menu.map(m=>({...m,date,servings:m.servings*.25})))},balanced=balanceCoachMeals(result,dates,options,foods,profile,t,menu,()=>Math.random().toString());for(const date of dates)expect(nutritionFits(dailyTotals(balanced.snapshots,date),t)).toBe(true);expect(()=>validateMeals(balanced,dates,options,foods,profile,t,()=> 'id')).not.toThrow();const s=state(),proposal={program:builtInPrograms(EXDB)[0],target:t,snapshots:balanced.snapshots,dates,baseRevision:0,profile};applyJoint(s,proposal,{training:true,target:true,meals:true,profile:true},EXDB,()=>Math.random().toString());expect(s.xunlian.meals).toHaveLength(21);expect(s.xunlian.logs).toEqual([]);expect(s.xunlian.target).toEqual(t);expect(s.xunlian.nutritionNeedsReview).toBe(false)})
+  it('blocks automatic adult prescription for minors, older or medical/pregnant users',()=>{for(const change of [{age:16},{age:65},{specialDiet:true}])expect(()=>targets({...profile,...change},85)).toThrow()})
+})

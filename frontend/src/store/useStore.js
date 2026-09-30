@@ -6,6 +6,7 @@ import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
 import { emptyXunlian } from '../lib/nutrition.js'
 import { migrateState, withoutCredentials } from '../lib/xunlian-state.js'
+import { dynamicBalance } from '../lib/dynamic-balance.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -101,12 +102,15 @@ export const useStore = create((set, get) => {
       const S = clone(get().S)
       const beforePlan = JSON.stringify([S.routines, S.week, S.dayPlan])
       const beforeEvidence = JSON.stringify([S.workouts, S.bodyweight, S.xunlian.logs])
-      mut(S)
+      const nutritionInputs=s=>JSON.stringify([s.bodyweight,['age','heightCm','sex','weightKg','activity','goal','trainingDays','trainingDuration','trainingTime','specialDiet'].map(k=>s.xunlian.profile[k]),s.xunlian.target])
+      const before=clone(S),beforeNutrition=nutritionInputs(S),result=mut(S)||{},reviewed=result.nutritionReviewed===true
       if (beforePlan !== JSON.stringify([S.routines, S.week, S.dayPlan])) {
         S.xunlian.revision++
-        if (S.xunlian.meals.length) S.xunlian.nutritionNeedsReview = true
+        if (S.xunlian.meals.length&&!reviewed) S.xunlian.nutritionNeedsReview = true
       }
+      if(beforeNutrition!==nutritionInputs(S)&&S.xunlian.meals.length&&!reviewed)S.xunlian.nutritionNeedsReview=true
       if(beforeEvidence!==JSON.stringify([S.workouts,S.bodyweight,S.xunlian.logs]))S.xunlian.revision++
+      dynamicBalance(before,S,result)
       persist(S, push)
     },
     replaceState(S, push = false) { persist(migrateState(S, DEF), push) },

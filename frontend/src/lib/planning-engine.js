@@ -1,4 +1,4 @@
-import { recipeNutrition, mealSnapshot, dailyTotals, clone, validateTarget, positive, NUTRIENTS, foodIndex } from './nutrition.js'
+import { recipeNutrition, mealSnapshot, dailyTotals, clone, validateTarget, positive, NUTRIENTS, foodIndex, nutritionFits } from './nutrition.js'
 import { applyProgram, validateProgram } from './programs.js'
 import { validateMealSnapshots } from './xunlian-state.js'
 import { requiredMealSlots } from './meal-slots.js'
@@ -36,7 +36,7 @@ export function validateMeals(result, dates, recipes, foods, profile, target, ui
     const n=dailyTotals(snapshots,date)
     const day=snapshots.filter(m=>m.date===date)
     if(enforceTargets&&profile.dailyBudgetCny>0&&day.every(m=>m.costSnapshotCny!=null)&&day.reduce((sum,m)=>sum+m.costSnapshotCny,0)>profile.dailyBudgetCny+.01)throw new Error(date+' 原料费用超过每日预算 '+profile.dailyBudgetCny+' 元。')
-    if(enforceTargets && target && (n.kcal==null||n.proteinG==null||Math.abs(n.kcal-target.kcal)>target.kcal*.2||Math.abs(n.proteinG-target.proteinG)>Math.max(20,target.proteinG*.3)))throw new Error(date+' 餐食合计 '+Math.round(n.kcal||0)+' kcal、蛋白质 '+Math.round(n.proteinG||0)+' g，与目标 '+target.kcal+' kcal / '+target.proteinG+' g 不符，请校准份数或更换食谱。')
+    if(enforceTargets && target && !nutritionFits(n,target))throw new Error(date+' 餐食合计 '+Math.round(n.kcal||0)+' kcal、蛋白质 '+Math.round(n.proteinG||0)+' g，与目标 '+target.kcal+' kcal / '+target.proteinG+' g 或官方均衡供能比例不符，请校准份数或更换食谱。')
   })
   if(enforceTargets&&Number.isInteger(profile.repeatMeals)&&profile.repeatMeals>0){const counts={};for(const m of result.meals)counts[m.recipeId]=(counts[m.recipeId]||0)+1;if(Object.values(counts).some(n=>n>profile.repeatMeals))throw new Error('同一道菜出现次数超过每周重复上限 '+profile.repeatMeals+' 次，请更换部分菜谱。')}
   return snapshots
@@ -62,4 +62,5 @@ export function applyJoint(S, proposal, choices, exercises, uid) {
   if(choices.meals){S.xunlian.meals=[...S.xunlian.meals.filter(m=>!proposal.dates.includes(m.date)),...clone(proposal.snapshots)];S.xunlian.nutritionNeedsReview=false}
   S.xunlian.snapshots=[snap,...oldSnapshots].slice(0,3)
   S.xunlian.revision++
+  return {nutritionReviewed:!!choices.meals}
 }
