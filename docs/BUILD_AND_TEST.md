@@ -1,8 +1,8 @@
 # 构建、运行与更新
 
-当前阶段2.0.7（2026-10-01）；执行范围以V11任务书与DELIVERY_STATUS为准。下方2.0.1–2.0.6章节为历史记录。
+当前阶段2.0.9（2026-10-01）；执行范围以V12任务书与DELIVERY_STATUS为准。下方2.0.1–2.0.6章节为历史记录。
 
-本次开发环境为 Windows x64，Node.js + Python 3，JDK 21，Android SDK 36，AGP 8.10.1，Gradle wrapper 8.14.3。默认 Android 工具位置为 `D:/DeepSeekHarnessData/jdk-21`、`D:/DeepSeekHarnessData/android-sdk`，脚本优先使用已设置的 JAVA_HOME、ANDROID_HOME。Node 和 Python 在 PATH。Electron 与 Android 插件的精确版本以 package-lock.json 为准；Android 要求最低 API 26。
+本次开发环境为 Windows x64，Node.js + Python 3，JDK 21，Android SDK 36，AGP 8.10.1，Gradle wrapper 8.14.3。默认 Android 工具位置为 `D:/OpenGymBuildTools/java`、`D:/OpenGymBuildTools/android-sdk`，脚本优先使用已设置的 JAVA_HOME、ANDROID_HOME。Node 和 Python 在 PATH。Electron 与 Android 插件的精确版本以 package-lock.json 为准；Android 要求最低 API 26。
 
 ## 数据与依赖
 
@@ -25,9 +25,9 @@ Set-Location ..
 pwsh -NoProfile -File scripts/build-release.ps1
 ```
 
-Windows：`artifacts/windows/OpenGymEX-2.0.7-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
+Windows：`artifacts/windows/OpenGymEX-2.0.9-portable.exe`；目录版本入口 `artifacts/windows/win-unpacked/OpenGymEX.exe`，使用目录版须保留整个目录。便携 EXE 解包后运行，不依赖本地开发服务器。没有购买代码签名证书，不能声称 Windows 发布者签名已通过。数据位于 Windows AppData 的 Xunlian 用户目录，替换 EXE 不替换个人数据。
 
-Android：`artifacts/OpenGymEX-2.0.7-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.7-dev / versionCode 20007，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.7-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
+Android：`artifacts/OpenGymEX-2.0.9-personal.apk`，applicationId=`app.xunlian.personal`，版本2.0.9-dev / versionCode 20009，最低 Android 8（API26）、target36。使用本项目生成的个人签名，已校验 APK v2/v3。它是可安装的个人开发包，不是已通过所有设备验收的正式发行版。需要调试版时运行 `scripts/build-android.ps1`，输出 `artifacts/OpenGymEX-2.0.9-debug.apk`。调试和个人 Release 签名不同，切换时可能不能覆盖安装；先从 App 设置导出数据再处理旧安装。
 
 Android 签名证书 SHA-256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。
 
@@ -101,6 +101,12 @@ Windows验证器的可选参数是实际EXE路径，不是--portable标记。默
 
 本版没有新增运行依赖。视觉调用复用DeepSeek适配器；使用deepseek-flash图像输入，保留原文本模型设置。业务计算入口为nutrition.js / dynamic-balance.js，计划覆盖入口为knowledge-programs.js。不得将测试用合成图片当作真实食物识别准确率报告。
 
-## 2.0.7 当前验证
+## 2.0.7 历史验证
 
 24文件/384项前端与56项API通过。本轮新增知识摘要输入、循环周恢复、菜单变化、三级计划与四筛选、全局防孤字及原生日期滚动。最终打包后的Windows验证含26项，并实际注入往右滑动触摸；APK验证保留原签名/递增版本、逐个核对最终dist。最终报告与SHA见DELIVERY_STATUS。开发快速检查可用 `node scripts/verify-windows.mjs --source`，它明确显示packaged=false，不能代替发布前实际便携EXE验证。
+
+## 2.0.9 当前验证
+
+前端26文件/394项通过。实际安装包和验证报告见DELIVERY_STATUS。新检查覆盖9原始表+3应用编排的真实ID/预填、未知ID拒绝、个人限制过滤和一次点击输入选中原表。模拟AI验证流程，不代替真实模型内容评估。
+
+本机JDK21在D:/OpenGymBuildTools/java，SDK在D:/OpenGymBuildTools/android-sdk，构建前设置JAVA_HOME和ANDROID_HOME。新电脑采用实际安装目录；脚本历史默认路径不能作为已安装证据。验收采用--disable-gpu进行离屏截图，避免本机显卡驱动挂起，不改变正常应用启动配置。

@@ -1,8 +1,13 @@
-# OpenGym EX 2.0.7 当前交付状态
+# OpenGym EX 2.0.9 当前交付状态
 
-2026-10-01。名称暂用OpenGym EX；当前范围以[V11任务书](OpenGymEX_2.0_V11_双端任务书与验收清单.md)为准，[换机说明](新电脑接手说明与后续任务书.md)记录恢复步骤。V10及此前文档留作历史。
+2026-10-01。名称暂用OpenGym EX；当前范围以[V12任务书](OpenGymEX_2.0_V12_双端任务书与验收清单.md)为准，[换机说明](新电脑接手说明与后续任务书.md)记录恢复步骤。V11及此前文档留作历史。
 
 ## 本轮完成
+
+- 博主计划已转为本机执行方案：Bruce9张原始表、烧毁一切就是美教学动作的3套应用编排，真实ID映射、组次/休息/个人负重预填、缺失变式明确替代。共12位作者28项入口，其他16项为公开摘要的个人适配参考，不冒充完整原课。
+- 选择具体计划后一次点击生成个人训练和七天饮食，传入选中原表、替代说明、官方要点和个人条件；候选优先参考动作但仍尊重器材和避练限制。修复AI格式解析丢exerciseId；未知ID拒绝，重量不由模型伪造。来源及边界见[博主计划说明](CREATOR_PROGRAMS.md)。
+- 原进阶表与个人恢复规则冲突时提示原因并要求编辑/个人适配；源数字保留在原文记录，缺基线只提供试练重量，不冒充达到作者百分比负荷。
+
 
 - 统一AI提示词先分析内置来源摘要/适用范围/恢复规则，再结合原话与档案；生成再提供相关真实预设参数实例。界面可查看输入知识来源及AI声明引用，未知来源ID拒绝，不宣称模型逐本阅读全文。
 - 计划库按来源→类型→具体方案进入，四项组合筛选目标、强度、最长训练日预计时长与部位。普通正文防孤字（包含单字加标点），复制文本不插入隐形字符；营养说明全宽分行，底部应用按钮可达。
@@ -26,30 +31,30 @@
 
 | 范围 | 结果 |
 |---|---|
-| 前端 | 24文件 / 384项PASS，含官方计算、目标差异、净训练变化、已吃/用户换餐保留、照片幂等及知识覆盖、恢复、菜式、孤字/原文保留、同ID回归 |
+| 前端 | 26文件 / 394项PASS，含官方计算、目标差异、净训练变化、已吃/用户换餐保留、照片幂等及知识覆盖、恢复、菜式、孤字/原文保留、同ID回归 |
 | 原API | 56项PASS |
 | 数据 | 402道都有食材和步骤；29道营养完整可规划，373道原方份数需审核；13545食材/85精确中文/1324来源动作/8锁定来源 |
 | 语言、HTTP、高清fixture | 11语言×781键与310中文扩展、本机实际HTTP、2项高清导入测试PASS；API动作目录同步PASS |
-| Windows实际便携EXE | 26项PASS，2026-10-01T01:00:50.489Z UTC；隔离合成资料/模拟AI，rendererErrors为空；包括独立日期卡、照片记录/替换、计划份数不记已吃、可读预填与EPIPE |
-| Android实际APK | 2.0.7-dev / 20007，原证书v2/v3；3071个最终dist文件逐个一致、2648原媒体+22较高清照片哈希、5份NOTICE与返回插件注册PASS |
+| Windows实际便携EXE | 28项PASS，2026-10-01T02:39:12.159Z UTC；隔离合成资料/模拟AI，rendererErrors为空；包含博主原表审核与一次点击自动生成；软件渲染离屏截图规避本机GPU驱动挂起；包括独立日期卡、照片记录/替换、计划份数不记已吃、可读预填与EPIPE |
+| Android实际APK | 2.0.9-dev / 20009，原证书v2/v3；3071个最终dist文件逐个一致、2648原媒体+22较高清照片哈希、5份NOTICE与返回插件注册PASS |
 
-报告为artifacts/verification-windows.json和verification-apk.json；手机宽度模拟、合成图片和构建验证不能称为真实视觉准确率或本轮安卓真机通过。
+报告为artifacts/verification-windows.json、verification-apk.json和verification-ci.json；手机宽度模拟、合成图片和构建验证不能称为真实视觉准确率或本轮安卓真机通过。
 
 ## 下载与阶段备份
 
 | 文件 | 字节 | SHA-256 |
 |---|---:|---|
-| OpenGymEX-2.0.7-personal.apk | 255954369 | `60f2cee5a3c531f22d015e5e881bfeff1d2bf08540aa53cc463441cc8b7ee522` |
-| OpenGymEX-2.0.7-portable.exe | 394803115 | `ae646beb503d8ecd5582efba9fd99367c58da987d2dc2194ac4548cc0eefa3c8` |
+| OpenGymEX-2.0.9-personal.apk | 255962561 | `50c3244f1df7039ca111c80962b7ec4fbd48a724738ac9e51742d0ca8d35d303` |
+| OpenGymEX-2.0.9-portable.exe | 394811525 | `25b0d11b988bf1fe6ffc93ab9532ae1e5af9564a88809989c437f2c2ab044334` |
 
 Android包名app.xunlian.personal，min26/target36，原证书SHA256：`100d6bb2cc70e95b8b203935bbdc62de4f15a5e478465c78aafd74e77d60285f`。覆盖原个人Release包保留数据；Windows保持AppData/Xunlian，无Windows发布者证书。
 
-[私人main](https://github.com/PLA0185/xunlian-2)保存源码及V11。[phase-2.0.7私人Release](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.7)保存双端包、交接文档、验证报告/模拟截图、SHA256与加密签名vault。未改变的source-cache.zip和media-preview.zip保留在[phase-2.0.4](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.4)，新机下载后bootstrap恢复8个锁定原始来源。
+[私人main](https://github.com/PLA0185/xunlian-2)保存源码及V12。[phase-2.0.9私人Release](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.9)保存双端包、交接文档、验证报告/模拟截图、SHA256与加密签名vault。未改变的source-cache.zip和media-preview.zip保留在[phase-2.0.4](https://github.com/PLA0185/xunlian-2/releases/tag/phase-2.0.4)，新机下载后bootstrap恢复8个锁定原始来源。
 
-签名恢复口令在旧机.private-signing/migration-recovery.txt，须单独带走，不上传。用户Key/训练饮食健康记录不属于源码发布；App设置导出JSON用于个人迁移。本阶段源码提交`97a011020a2569afeac7f4aeb6664dfd8cfbe6d8`。[GitHub CI](https://github.com/PLA0185/xunlian-2/actions/runs/36799030279)已全部PASS（前端、API、API容器构建）；报告artifacts/verification-ci.json。
+签名恢复口令在旧机.private-signing/migration-recovery.txt，须单独带走，不上传。用户Key/训练饮食健康记录不属于源码发布；App设置导出JSON用于个人迁移。本阶段源码提交`1b707941e18249d66fae5dd9938fec8beaea93f4`。[GitHub CI](https://github.com/PLA0185/xunlian-2/actions/runs/36806886951)已全部PASS（前端、API、API容器构建）；报告artifacts/verification-ci.json。
 
 ## 真实边界
 
 373道原方的精确克数/份数、2321处原料映射仍需内容审核；不能将“全有做法”写成“全有精确营养”。食材85条精确中文，其他保留英文生熟细名。完整知识覆盖指已加载来源和活动的入口，具体日程由应用编排，不能冒充全部官方固定课程。
 
-原动作图片/GIF仍180×180，用户接受先用现有素材；真实整库高清与Gymvisual授权材料仍未取得。传统/球类33个新增入口没有专项教学媒体。小米历史取决于来源App实际写入Health Connect；复杂周期、大历史/读屏、正式品牌和Windows证书为后续明确事项，详见V11。当前不能保证任何条件下都自动平衡，无法满足时会保留修改并告知复核。
+原动作图片/GIF仍180×180，用户接受先用现有素材；真实整库高清与Gymvisual授权材料仍未取得。传统/球类33个新增入口没有专项教学媒体。小米历史取决于来源App实际写入Health Connect；复杂周期、大历史/读屏、正式品牌和Windows证书为后续明确事项，详见V12。当前不能保证任何条件下都自动平衡，无法满足时会保留修改并告知复核。
