@@ -8,12 +8,13 @@ import { knowledgePrograms } from './knowledge-programs.js'
 import { EXDB } from './exercises-data.js'
 import { KNOWLEDGE_EXERCISES } from './knowledge-exercises.js'
 import { needsPartner } from './solo-exercises.js'
+import { recoveryConflicts } from './training-recovery.js'
 import guides from '../data/china-guides.json'
 import foods from '../data/foods.json'
 import recipes from '../data/recipes.json'
 const profile={age:24,heightCm:172,sex:'male',weightKg:75,activity:1.5,goal:'lose',fitnessLevel:'inactive',onboardingCompleted:true,limitations:'无'}
 const catalog=[...EXDB,...KNOWLEDGE_EXERCISES],date=localDate()
-function setup(){const s={routines:[],week:{},dayPlan:{},workouts:[],bodyweight:[],customEx:[],unit:'kg',xunlian:{...emptyXunlian(),profile}};s.xunlian.target=targets(profile,75);const menu=feasibleMenu(eligibleRecipes(recipes,foods,profile),foods,s.xunlian.target,{profile});s.xunlian.meals=menu.map(m=>mealSnapshot(recipes.find(r=>r.id===m.recipeId),foods,m.servings,date,m.slot,m.slot));return s}
+function setup(){const s={routines:[],week:{},dayPlan:{},workouts:[],bodyweight:[],customEx:[],unit:'kg',xunlian:{...emptyXunlian(),profile:clone(profile)}};s.xunlian.target=targets(profile,75);const menu=feasibleMenu(eligibleRecipes(recipes,foods,profile),foods,s.xunlian.target,{profile});s.xunlian.meals=menu.map(m=>mealSnapshot(recipes.find(r=>r.id===m.recipeId),foods,m.servings,date,m.slot,m.slot));return s}
 it('keeps only the three goals and interprets a conversational deficit within local limits',()=>{
   const ordinary=targets(profile,75),request=targets({...profile,requestedDeficitKcal:1000,goalRequest:'想减脂快一点'},75)
   expect(request.kcal).toBeLessThan(ordinary.kcal);expect(request.inputs.goal).toBe('lose');expect(request.deficitKcal).toBeLessThanOrEqual(Math.ceil(request.tdee*.2));expect(request.kcal).toBeGreaterThan(request.bmr)
@@ -56,4 +57,22 @@ it('covers every loaded guide, presets numeric loads for standard adult profiles
   for(const p of plans){validateProgram(p,catalog);const filled=prefillProgram(s,p,catalog);for(const item of filled.days.flatMap(d=>d.exerciseItems)){expect(Number.isFinite(item.weight)).toBe(true);expect(needsPartner(catalog.find(e=>e.id===item.exerciseId))).toBe(false)}}
   expect(needsPartner(EXDB.find(e=>e.id==='0016'))).toBe(true);expect(needsPartner(EXDB.find(e=>e.id==='0009'))).toBe(false)
   const helper=clone(plans[0]);helper.days[0].exerciseItems[0].exerciseId='0016';expect(()=>validateProgram(helper,catalog)).toThrow('同伴')
+})
+it('adds light aerobic days when increasing to five instead of copying full-body strength into adjacent days',()=>{
+  const s=setup();s.xunlian.profile.trainingDays=2;applyProgram(s,builtInPrograms(catalog)[0],catalog,()=>Math.random().toString())
+  const before=clone(s);s.xunlian.profile.trainingDays=5;dynamicBalance(before,s)
+  const days=Object.entries(s.week).map(([weekday,id])=>({weekday:Number(weekday),exerciseItems:s.routines.find(r=>r.id===id).ex.map(e=>({exerciseId:e.id,sets:e.sets,reps:e.reps,durationSec:e.sec,restSec:e.restSec}))}))
+  expect(days).toHaveLength(5);expect(recoveryConflicts({days},catalog)).toEqual([])
+  expect(days.filter(d=>d.exerciseItems.every(e=>e.exerciseId==='knowledge-walking')).length).toBeGreaterThanOrEqual(2)
+})
+it('does not fill recovery days with walking when the user explicitly avoids walking',()=>{
+  const s=setup();s.xunlian.profile.trainingDays=2;applyProgram(s,builtInPrograms(catalog)[0],catalog,()=>Math.random().toString())
+  const before=clone(s);s.xunlian.profile.trainingDays=5;s.xunlian.profile.avoidExercises='健步走';dynamicBalance(before,s)
+  expect(Object.values(s.week).map(id=>s.routines.find(r=>r.id===id)).flatMap(r=>r.ex).some(e=>e.id==='knowledge-walking')).toBe(false)
+  expect(s.xunlian.balanceNotices[0].changes.join()).toMatch(/重新编排|限制/)
+})
+it('keeps fixed weekday availability rather than scheduling outside it to meet a new day count',()=>{
+  const s=setup();s.xunlian.profile={...s.xunlian.profile,trainingDays:2,schedulePreference:'fixed',availableDays:[1,4]};applyProgram(s,builtInPrograms(catalog)[0],catalog,()=>Math.random().toString())
+  const before=clone(s);s.xunlian.profile.trainingDays=5;dynamicBalance(before,s)
+  expect(s.week).toEqual(before.week);expect(s.xunlian.profile.availableDays).toEqual([1,4]);expect(s.xunlian.nutritionNeedsReview).toBe(true)
 })

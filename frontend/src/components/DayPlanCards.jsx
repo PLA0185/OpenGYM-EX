@@ -4,20 +4,27 @@ import { resolvePrescription } from '../lib/prescription.js'
 
 const weekdays=['周日','周一','周二','周三','周四','周五','周六']
 export default function DayPlanCards({title,dates,renderDay}){
-  const [index,setIndex]=useState(0),[height,setHeight]=useState(),track=useRef(null),cards=useRef([]),drag=useRef(null)
+  const [index,setIndex]=useState(0),[height,setHeight]=useState(),track=useRef(null),cards=useRef([]),drag=useRef(null),settleTimer=useRef(null),selected=useRef(0)
   const current=Math.min(index,dates.length-1)
-  const go=i=>{const next=Math.max(0,Math.min(dates.length-1,i));setIndex(next);track.current?.scrollTo({left:cards.current[next]?.offsetLeft||0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'})}
+  selected.current=current
+  const settle=()=>{const rail=track.current;if(!rail?.clientWidth||drag.current)return;const nearest=cards.current.reduce((best,c,i)=>c&&Math.abs(c.offsetLeft-rail.scrollLeft)<Math.abs(cards.current[best].offsetLeft-rail.scrollLeft)?i:best,0);setIndex(nearest)}
+  const go=i=>{const next=Math.max(0,Math.min(dates.length-1,i)),rail=track.current;if(!rail?.clientWidth)return;rail.scrollTo({left:cards.current[next]?.offsetLeft||0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});clearTimeout(settleTimer.current);settleTimer.current=setTimeout(settle,180)}
   useEffect(()=>{
     const card=cards.current[current],rail=track.current;if(!card||!rail)return
     const observer=new ResizeObserver(()=>setHeight(card.offsetHeight+12));observer.observe(card)
-    const resize=new ResizeObserver(()=>rail.scrollTo({left:card.offsetLeft,behavior:'instant'}));resize.observe(rail)
-    return()=>{observer.disconnect();resize.disconnect()}
+    return()=>observer.disconnect()
   },[current,dates.join('|')])
+  useEffect(()=>{
+    const rail=track.current;let width=rail.clientWidth
+    // Card-height changes must not cancel touch inertia or a smooth date change.
+    const resize=new ResizeObserver(()=>{const next=rail.clientWidth;if(next&&next!==width){width=next;rail.scrollTo({left:cards.current[selected.current]?.offsetLeft||0,behavior:'instant'})}});resize.observe(rail)
+    return()=>{resize.disconnect();clearTimeout(settleTimer.current)}
+  },[dates.join('|')])
   const end=e=>{if(!drag.current)return;const start=drag.current;drag.current=null;track.current.style.scrollSnapType='';if(track.current.hasPointerCapture(e.pointerId))track.current.releasePointerCapture(e.pointerId);go(current+(Math.abs(start.dx)>40?(start.dx>0?1:-1):0))}
   return <section className="day-plans" aria-label={title}><h2>{title}</h2><div className="day-dates">{dates.map((date,i)=><button key={date} aria-pressed={i===current} onClick={()=>go(i)}><span>{weekdays[new Date(date+'T12:00:00').getDay()]}</span><small>{date.slice(5).replace('-','/')}</small></button>)}</div>
     <div className="day-track" ref={track} style={{height}} tabIndex={0} aria-label={title+'，左右滑动切换日期'}
       onKeyDown={e=>{if(e.target===e.currentTarget&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();go(current+(e.key==='ArrowRight'?1:-1))}}}
-      onScroll={e=>{if(drag.current)return;const rail=e.currentTarget;if(!rail.clientWidth)return;const nearest=cards.current.reduce((best,c,i)=>Math.abs(c.offsetLeft-rail.scrollLeft)<Math.abs(cards.current[best].offsetLeft-rail.scrollLeft)?i:best,0);setIndex(nearest)}}
+      onScroll={()=>{clearTimeout(settleTimer.current);settleTimer.current=setTimeout(settle,140)}} onScrollEnd={()=>{clearTimeout(settleTimer.current);settle()}}
       onPointerDown={e=>{if(e.pointerType!=='mouse'||e.button!==0||e.target.closest('button,input,textarea,select,a,summary,label'))return;drag.current={x:e.clientX,left:e.currentTarget.scrollLeft,dx:0};e.currentTarget.setPointerCapture(e.pointerId);e.currentTarget.style.scrollSnapType='none'}}
       onPointerMove={e=>{if(!drag.current)return;drag.current.dx=drag.current.x-e.clientX;e.currentTarget.scrollLeft=drag.current.left+drag.current.dx}}
       onPointerUp={end} onPointerCancel={end}>{dates.map((date,i)=><article ref={el=>cards.current[i]=el} className="day-plan-card" key={date} inert={i!==current} aria-hidden={i!==current}><h3>{date} · {weekdays[new Date(date+'T12:00:00').getDay()]}</h3>{renderDay(date)}</article>)}</div>

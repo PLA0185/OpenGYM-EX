@@ -20,6 +20,6 @@ export default function RecipeCooking({recipe,foods,servings=1}){
     {!!recipe.tips?.length&&<Section title="细节与注意事项"><ul className="steps-list">{recipe.tips.map((tip,i)=><li key={i}>{recipeText(tip)}</li>)}</ul></Section>}
     {recipe.notes&&<p className="sect-f">{recipe.notes}</p>}
     {images.length>0&&<Section title="原方图片"><div className="recipe-gallery">{images.map((src,i)=><figure key={src}><img loading="lazy" src={src} alt={recipe.nameZh+' 原方图 '+(i+1)}/><figcaption>原方图 {i+1}</figcaption></figure>)}</div></Section>}
-    {recipe.originalText&&<details className="recipe-original"><summary>查看完整原方（含补充和变化）</summary><pre>{recipe.originalText}</pre></details>}
+    {recipe.originalText&&<details className="recipe-original"><summary>查看完整原方（含补充和变化）</summary><pre className="recipe-source-text">{recipe.originalText}</pre></details>}
   </div>
 }

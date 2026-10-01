@@ -44,21 +44,28 @@ export function fitNutritionPortions(parts,target,profile={}){
 export function balanceCoachMeals(result,dates,recipes,foods,profile,target,fallbackMenu,uid){
   // First reject invented IDs, duplicate slots, exclusions and incomplete days.
   validateMeals(result,dates,recipes,foods,profile,target,uid,false)
-  const changed=[],replaced=[],usage={},repeatLimit=Number.isInteger(profile.repeatMeals)&&profile.repeatMeals>0?profile.repeatMeals:null
+  const changed=[],replaced=[],varied=[],usage={},combinations=new Set(),repeatLimit=Number.isInteger(profile.repeatMeals)&&profile.repeatMeals>0?profile.repeatMeals:null
   const meals=dates.flatMap(date=>{
     const original=result.meals.filter(m=>m.date===date),fitted=fitPortions(original,recipes,foods,target,profile),dayUsage={...usage}
     for(const m of original)dayUsage[m.recipeId]=(dayUsage[m.recipeId]||0)+1
     let chosen=fitted
-    if(!chosen||(repeatLimit!=null&&Object.values(dayUsage).some(n=>n>repeatLimit))){
-      const fallback=repeatLimit!=null?feasibleMenu(recipes,foods,target,{usage,repeatLimit,profile}):fallbackMenu
+    const duplicate=combinations.has(original.map(m=>m.recipeId).join('|'))
+    const repetitive=dates.length>1&&repeatLimit==null&&(duplicate||new Set(original.map(m=>m.recipeId)).size<Math.min(3,original.length,recipes.length)||Object.values(dayUsage).some(n=>n>3))
+    if(!chosen||repetitive||(repeatLimit!=null&&Object.values(dayUsage).some(n=>n>repeatLimit))){
+      // Variety is preferred, not a reason to invent nutrition or weaken explicit
+      // limits. Try lesser-used real recipes before relaxing the variety preference.
+      const fallback=feasibleMenu(recipes,foods,target,{usage,repeatLimit:repeatLimit??3,profile})||(repeatLimit==null?feasibleMenu(recipes,foods,target,{usage,profile})||fallbackMenu:null)
       if(!fallback)throw new Error(date+' 没有同时满足营养与重复次数条件的组合，请补充可用菜谱或调整重复上限。')
-      replaced.push(date);chosen=fallback.map(m=>({...m,date}))
+      ;(fitted&&repetitive?varied:replaced).push(date);chosen=fallback.map(m=>({...m,date}))
     }else if(fitted.some((m,i)=>m.servings!==original[i].servings))changed.push(date)
     for(const m of chosen)usage[m.recipeId]=(usage[m.recipeId]||0)+1
+    combinations.add(chosen.map(m=>m.recipeId).join('|'))
     return chosen
   })
   const snapshots=validateMeals({meals},dates,recipes,foods,profile,target,uid)
   const note=[changed.length?'餐食份数已按本地食材营养数据校准。':'',replaced.length?'其中 '+replaced.join('、')+' 的原组合无法满足营养或重复条件，已替换为符合忌口的本地可行组合，可继续修改。':''].filter(Boolean).join(' ')
   const budgetNote=profile.dailyBudgetCny>0?(snapshots.some(m=>m.costSnapshotCny==null)?'预算尚未验证：原料价格未填写，不以估价声称达标。可在食材详情填写对应生熟状态的每100克价格。':'原料费用已按你填写的价格核对每日预算，不含水电、人工或外卖费用。'):''
-  return {meals,snapshots,note:[note,budgetNote].filter(Boolean).join(' ')}
+  const varietyNote=varied.length?'已按全周用菜情况调整重复组合，保留忌口、预算和营养校验；可继续换菜。':''
+  const limited=dates.length>1&&new Set(meals.map(m=>m.recipeId)).size<Math.min(5,recipes.length)?'当前限制和营养完整菜谱不足以提供更多变化，已优先保证真实营养与忌口。':''
+  return {meals,snapshots,note:[note,varietyNote,limited,budgetNote].filter(Boolean).join(' ')}
 }

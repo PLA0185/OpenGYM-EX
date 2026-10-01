@@ -3,6 +3,7 @@ import { recipeNutrition,clone, sumNutrition, scaleNutrition, nutritionFits } fr
 import { requiredMealSlots } from './meal-slots.js'
 import { recipeCost } from './meal-cost.js'
 import { needsPartner } from './solo-exercises.js'
+import { validateRecovery } from './training-recovery.js'
 export function coachCatalog(exercises,profile){
   exercises=exercises.filter(e=>!needsPartner(e))
   const avoids=String(profile.avoidExercises||'').split(/[、,，;；\n]+/).map(t=>t.trim().toLowerCase()).filter(s=>s&&!['无','没有','none'].includes(s))
@@ -12,10 +13,23 @@ export function coachCatalog(exercises,profile){
 export function checkCoachProgram(program,candidates,profile){
   validateProgram(program,candidates)
   if(program.days.length!==profile.trainingDays)throw new Error('训练日数量与已确认的每周天数不一致。')
-  if(program.days.some(day=>!profile.availableDays.includes(day.weekday)))throw new Error('训练日安排在不可训练的星期。')
+  if(profile.schedulePreference!=='flexible'&&program.days.some(day=>!profile.availableDays.includes(day.weekday)))throw new Error('训练日安排在不可训练的星期。')
   if(!Number.isFinite(profile.trainingDuration)||profile.trainingDuration<10||profile.trainingDuration>180)throw new Error('请设置 10–180 分钟的训练时间。')
   if(analyzeProgram(program,candidates).days.some(day=>day.estimatedDuration>profile.trainingDuration+10))throw new Error('估算训练时长超过已确认时间，请减少动作或组数。')
-  return program
+  return validateRecovery(program,candidates,profile)
+}
+export function eligibleJointPrograms(programs,catalog,profile){
+  const allowedIds=new Set(coachCatalog(catalog,profile).map(e=>e.id)),seen=new Set()
+  return programs.filter(p=>{
+    try{
+      validateRecovery(p,catalog,profile)
+      if(seen.has(p.id)||!p.days.every(d=>d.exerciseItems.every(e=>allowedIds.has(e.exerciseId)))||
+        (profile.trainingDays&&p.days.length!==profile.trainingDays)||
+        (profile.trainingDuration&&analyzeProgram(p,catalog).days.some(d=>d.estimatedDuration>profile.trainingDuration+10))||
+        (profile.schedulePreference==='fixed'&&p.days.some(d=>!profile.availableDays.includes(d.weekday))))return false
+      seen.add(p.id);return true
+    }catch{return false}
+  })
 }
 export function selectCoachCandidates(candidates){
   const result=[],seen=new Set(),groups=new Map()
@@ -26,9 +40,10 @@ export function selectCoachCandidates(candidates){
 // Give the model an actually feasible menu as evidence, rather than inventing nutrients.
 export function feasibleMenu(recipes,foods,target,{usage={},repeatLimit=null,profile={}}={}){
   const slots=requiredMealSlots(profile)
-  const candidates=recipes.slice(0,40).map(r=>({r,n:recipeNutrition(r,foods).nutrition})).filter(({n})=>n.kcal>0&&Number.isFinite(n.proteinG))
-  for(const a of candidates)for(const b of candidates)for(const c of candidates){
+  const candidates=recipes.slice(0,40).map(r=>({r,n:recipeNutrition(r,foods).nutrition})).filter(({n})=>n.kcal>0&&Number.isFinite(n.proteinG)).sort((a,b)=>(usage[a.r.id]||0)-(usage[b.r.id]||0))
+  for(const distinct of [true,false])for(const a of candidates)for(const b of candidates)for(const c of candidates){
     const picks=slots.map((_,i)=>[a,b,c][i%3]),fractions=slots.length===3?[.3,.4,.3]:slots.map(()=>1/slots.length)
+    if(distinct&&new Set(picks.map(p=>p.r.id)).size<Math.min(3,slots.length,candidates.length))continue
     if(repeatLimit!=null){const counts={...usage};for(const x of picks)counts[x.r.id]=(counts[x.r.id]||0)+1;if(Object.values(counts).some(n=>n>repeatLimit))continue}
     const parts=picks.map(({r,n},i)=>({recipeId:r.id,servings:Math.round(target.kcal*fractions[i]/n.kcal*100)/100,n,cost:recipeCost(r,profile)}))
     if(parts.some(p=>p.servings<.1||p.servings>20))continue

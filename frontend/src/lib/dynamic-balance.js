@@ -3,13 +3,14 @@ import recipesSeed from '../data/recipes.json'
 import { clone,planningContext,targets,validateTarget,localDate,monday,nutritionFits,scaleNutrition,sumNutrition,mealSnapshot } from './nutrition.js'
 import { eligibleRecipes,recipeAllowed } from './planning-engine.js'
 import { fitNutritionPortions } from './meal-portions.js'
-import { feasibleMenu } from './assistant-plan.js'
+import { feasibleMenu,coachCatalog } from './assistant-plan.js'
 import { requiredMealSlots } from './meal-slots.js'
 import { needsPartner } from './solo-exercises.js'
 import { EXDB } from './exercises-data.js'
 import { KNOWLEDGE_EXERCISES } from './knowledge-exercises.js'
 import { analyzeProgram } from './programs.js'
 import activityReference from '../data/activity-reference.json'
+import { recoveryConflicts, suggestedWeekdays, resistanceWork } from './training-recovery.js'
 const idx=new Map([...EXDB,...KNOWLEDGE_EXERCISES].map(e=>[e.id,e]))
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b)
 const scheduled=S=>Array.from({length:7},(_,i)=>S.routines.find(r=>r.id===S.week[i]))
@@ -42,7 +43,8 @@ export function rebalanceDay(S,date,target,lockedIds=[]){
   // A fully unconsumed day may be rebuilt from actual source nutrition. Never
   // overwrite a user-edited meal, remove actual intake or invent a recipe.
   if(!logs.length&&!lockedIds.length&&requiredMealSlots(x.profile).every(slot=>day.some(m=>m.slot===slot))){
-    const candidates=eligibleRecipes(recipes,foods,x.profile),menu=feasibleMenu(candidates,foods,target,{profile:x.profile})
+    const usage={};for(const meal of x.meals.filter(m=>m.date!==date&&monday(m.date)===monday(date)))usage[meal.recipeId]=(usage[meal.recipeId]||0)+1
+    const candidates=eligibleRecipes(recipes,foods,x.profile),menu=feasibleMenu(candidates,foods,target,{profile:x.profile,usage,repeatLimit:x.profile.repeatMeals??null})
     if(menu){const meals=menu.map(p=>mealSnapshot(candidates.find(r=>r.id===p.recipeId),foods,p.servings,date,p.slot,day.find(m=>m.slot===p.slot)?.id||'balanced-'+date+'-'+p.slot));return {meals,ok:true,note:'原组合不适合新目标，已用符合忌口的完整配方重新安排。'}}
   }
   return {meals:day,ok:false,note:'保留你修改的内容；剩余餐食无法同时满足当前营养或忌口条件，请修改餐食或补充合适菜谱。不会用过量训练补偿，也不会改已吃记录。'}
@@ -50,7 +52,7 @@ export function rebalanceDay(S,date,target,lockedIds=[]){
 export function dynamicBalance(before,S,{nutritionReviewed=false,balanceDeferred=false,skipBalance=false}={}){
   if(skipBalance)return
   const x=S.xunlian,b=before.xunlian,today=localDate(),changes=[]
-  let targetError=false
+  let targetError=false,trainingReview=false
   if(!nutritionReviewed&&!S.active){
     const goalChanged=b.profile.goal!==x.profile.goal,timeChanged=b.profile.trainingDuration!==x.profile.trainingDuration
     if(goalChanged||timeChanged){
@@ -69,10 +71,24 @@ export function dynamicBalance(before,S,{nutritionReviewed=false,balanceDeferred
     if(b.profile.trainingDays!==x.profile.trainingDays&&Number.isInteger(x.profile.trainingDays)){
       const days=Object.keys(S.week).filter(d=>S.routines.some(r=>r.id===S.week[d])).map(Number),wanted=x.profile.trainingDays
       if(days.length&&wanted>=1&&wanted<=6){
-        const available=x.profile.availableDays?.length===wanted?x.profile.availableDays:[1,3,5,2,4,6].slice(0,wanted)
-        const routines=days.map(d=>S.routines.find(r=>r.id===S.week[d])),week={}
-        available.forEach((d,i)=>{let r=routines[i];if(!r){r={...clone(routines[i%routines.length]),id:'linked-routine-'+Date.now()+'-'+i};S.routines.push(r)}week[d]=r.id});S.week=week
-        changes.push(`已按每周 ${wanted} 天重新安排训练星期；沿用原动作，需按肌群恢复检查相邻训练日。`)
+        const fixed=x.profile.schedulePreference==='fixed'&&x.profile.availableDays?.length
+        const available=fixed?x.profile.availableDays.slice(0,wanted):suggestedWeekdays(wanted)
+        if(available.length<wanted)trainingReview=true
+        const routines=days.map(d=>S.routines.find(r=>r.id===S.week[d])),week={},planned=[],created=[],catalog=[...idx.values(),...S.customEx],permitted=new Set(coachCatalog(catalog,x.profile).map(e=>e.id))
+        const asDay=(weekday,r)=>({weekday,exerciseItems:r.ex.map(e=>({exerciseId:e.id,sets:e.sets,reps:e.reps,durationSec:e.sec,restSec:e.restSec,percent1RM:e.prescription?.percent1RM,rpe:e.prescription?.rpe,rir:e.prescription?.rir}))})
+        let light=0,strength=0;const used=new Map()
+        for(const d of available){
+          if(trainingReview)break
+          let r=[...routines].sort((a,b)=>(used.get(a.id)||0)-(used.get(b.id)||0)).find(candidate=>{
+            const day=asDay(d,candidate),isStrength=resistanceWork(day,catalog).size>0
+            return candidate.ex.every(e=>permitted.has(e.id))&&(!isStrength||!['inactive','occasional'].includes(x.profile.fitnessLevel)||strength<3)&&!recoveryConflicts({days:[...planned,day]},catalog).length
+          })
+          if(!r&&!permitted.has('knowledge-walking')){trainingReview=true;break}
+          if(!r){const minutes=Math.max(5,Math.min(20,(x.profile.trainingDuration||30)-5));r={id:'linked-aerobic-'+Date.now()+'-'+d,name:'轻有氧 · 恢复安排',emoji:'dumbbell',prog:'off',ex:[{id:'knowledge-walking',sets:1,reps:0,weight:0,sec:minutes*60,min:minutes,mode:'cardio',restSec:0}]};created.push(r);light++}
+          used.set(r.id,(used.get(r.id)||0)+1);const day=asDay(d,r);if(resistanceWork(day,catalog).size)strength++;planned.push(day);week[d]=r.id
+        }
+        if(trainingReview)changes.push('已更新每周天数，但固定星期或运动限制下无法安全补足活动日；保留原排期，标为待复核，请核对可训练星期并让AI按新条件重新编排，不强行复制重力量或加入禁止的活动。')
+        else {S.routines.push(...created);S.week=week;if(!fixed)x.profile.availableDays=available;changes.push(`已按每周 ${wanted} 天安排并检查跨周肌群恢复；保留合适的原训练，${light?`增加 ${light} 天轻健步走，避免重复重力量`:'相同肌群留出恢复间隔'}。新增有氧为可编辑建议，按个人恢复调整。`)}
       }
     }
   }
@@ -105,10 +121,11 @@ export function dynamicBalance(before,S,{nutritionReviewed=false,balanceDeferred
       }
       if(updates.size)x.meals=[...x.meals.filter(m=>!updates.has(m.date)),...[...updates.values()].flat()]
       if(Number.isInteger(x.profile.repeatMeals)&&x.profile.repeatMeals>0){const counts={};for(const m of x.meals.filter(m=>m.date>=today&&m.recipeId)){const key=monday(m.date)+'|'+m.recipeId;counts[key]=(counts[key]||0)+1}if(Object.values(counts).some(n=>n>x.profile.repeatMeals)){failed.push('每周同菜重复上限');changes.push('已核对重复次数：现有餐食超出新上限，需要更换部分菜谱。')}}
-      x.nutritionNeedsReview=targetError||failed.length>0
+      x.nutritionNeedsReview=targetError||trainingReview||failed.length>0
       if(failed.length)changes.push(failed.join('、')+'：需要补充合适餐食，当前无法自动满足全部条件；保留你的修改和实际摄入，不增加补偿训练。')
       else if(!updates.size)changes.push('餐食合计仍在当前目标容差内，保留原份数。')
     }
   }
+  if(trainingReview)x.nutritionNeedsReview=true
   if(changes.length){x.balanceNotices=[{id:'balance-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),at:Date.now(),status:x.nutritionNeedsReview?'review':'balanced',changes:changes.slice(0,30),acknowledged:false},...(x.balanceNotices||[])].slice(0,20);x.revision++}
 }

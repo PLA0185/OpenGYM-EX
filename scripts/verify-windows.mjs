@@ -14,16 +14,17 @@ fixture.active.entries[0].target.restSec=120
 fixture.exWeights[bench]={w:100,d:fixture.active.d}
 fixture.active.entries[0].target.prefillBasis={sourceName:'验证导入方案',load:'source',unit:'kg',rest:'source'}
 writeFileSync(join(profile,'workout-fixture.json'),JSON.stringify(fixture))
-const executable=resolve(process.argv[2]||join(root,'artifacts/windows/win-unpacked/OpenGymEX.exe'))
+const source=process.argv.includes('--source')
+const executable=source?join(root,'frontend/node_modules/electron/dist/electron.exe'):resolve(process.argv[2]||join(root,'artifacts/windows/win-unpacked/OpenGymEX.exe'))
 const env={...process.env};delete env.ELECTRON_RUN_AS_NODE
-const child=spawn(executable,['--verify-build','--verify-closed-pipe','--verify-profile='+profile],{env,windowsHide:true,stdio:['ignore','pipe','pipe']})
+const child=spawn(executable,[...(source?[join(root,'frontend')]:[]),'--verify-build','--verify-closed-pipe','--verify-profile='+profile],{env,windowsHide:true,stdio:['ignore','pipe','pipe']})
 // Reproduce the launcher exiting and closing its stdout/stderr pipe handles.
 child.stdout.destroy();child.stderr.destroy()
 const timer=setTimeout(()=>{child.kill();process.exitCode=1},180000)
 await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(new Error('Packaged verifier exited: '+code)))})
 clearTimeout(timer)
 const report=JSON.parse(readFileSync(join(profile,'verification-report.json'),'utf8'))
-if(report.status!=='PASS'||!report.packaged)throw new Error('Verification failed: '+JSON.stringify(report))
+if(report.status!=='PASS'||(!source&&!report.packaged))throw new Error('Verification failed: '+JSON.stringify(report))
 report.checks.push('Closed stdout/stderr EPIPE regression')
 writeFileSync(join(root,'artifacts/OpenGymEX-workout-bilingual.png'),readFileSync(join(profile,'workout-completion.png')))
 writeFileSync(join(root,'data/raw/windows-verify.json'),JSON.stringify(report,null,2))

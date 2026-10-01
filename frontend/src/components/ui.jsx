@@ -15,6 +15,7 @@
 
 import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
+import ReadableText from './ReadableText.jsx'
 
 /* ============================ text ============================ */
 
@@ -218,9 +219,9 @@ export function Check({ checked, onChange, className = '', size }) {
 export function Section({ title, footer, children, className = '' }) {
   return (
     <section className={'sect ' + className}>
-      {title && <h2 className="sect-t">{title}</h2>}
+      {title && <h2 className="sect-t"><ReadableText>{title}</ReadableText></h2>}
       <div className="sect-b">{children}</div>
-      {footer && <p className="sect-f">{footer}</p>}
+      {footer && <p className="sect-f"><ReadableText>{footer}</ReadableText></p>}
     </section>
   )
 }
@@ -231,11 +232,11 @@ export function Row({ icon, iconTint, title, subtitle, value, accessory = 'none'
     <Tag className={'lrow' + (onClick ? ' tap' : '') + (danger ? ' danger' : '') + ' ' + className} onClick={onClick}>
       {icon && <span className="lrow-i" style={iconTint ? { '--tint': iconTint } : null}><Icon name={icon} /></span>}
       <span className="lrow-m">
-        <span className="lrow-t">{title}</span>
-        {subtitle && <span className="lrow-s">{subtitle}</span>}
+        <span className="lrow-t"><ReadableText>{title}</ReadableText></span>
+        {subtitle && <span className="lrow-s"><ReadableText>{subtitle}</ReadableText></span>}
       </span>
       {children}
-      {value != null && <span className="lrow-v">{value}</span>}
+      {value != null && <span className="lrow-v"><ReadableText>{value}</ReadableText></span>}
       {accessory === 'chevron' && <Icon name="chevronRight" className="lrow-c" />}
       {accessory === 'check' && <Icon name="check" className="lrow-k" />}
     </Tag>
@@ -258,8 +259,8 @@ export function SelectRow({ icon, iconTint, title, value, options, onChange, she
         <div className="sect-b">
           {options.map(o => (
             <button key={o.value} className="lrow tap" onClick={() => { close(); onChange(o.value) }}>
-              <span className="lrow-m"><span className="lrow-t">{o.label}</span>
-                {o.subtitle && <span className="lrow-s">{o.subtitle}</span>}</span>
+              <span className="lrow-m"><span className="lrow-t"><ReadableText>{o.label}</ReadableText></span>
+                {o.subtitle && <span className="lrow-s"><ReadableText>{o.subtitle}</ReadableText></span>}</span>
               {o.value === value && <Icon name="check" className="lrow-k" />}
             </button>
           ))}
@@ -289,7 +290,7 @@ export function Button({ variant = 'plain', size, icon, trailingIcon, children, 
   return (
     <button className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>
       {icon && <Icon name={icon} />}
-      {children && <span>{children}</span>}
+      {children && <span><ReadableText>{children}</ReadableText></span>}
       {trailingIcon && <Icon name={trailingIcon} />}
     </button>
   )

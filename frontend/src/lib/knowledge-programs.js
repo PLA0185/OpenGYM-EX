@@ -4,6 +4,7 @@ import { clone } from './nutrition.js'
 import { needsPartner } from './solo-exercises.js'
 import { KNOWLEDGE_EXERCISES } from './knowledge-exercises.js'
 import activityReference from '../data/activity-reference.json'
+import { programFilters } from './program-filters.js'
 export function knowledgePrograms(exercises){
   const built=builtInPrograms(exercises),base=guidelinePrograms(exercises),china=base[0],plans=[...base]
   const timed=(id,minutes)=>({exerciseId:id,originalText:exercises.find(e=>e.id===id)?.nameZh||id,mappingStatus:'exact',sets:1,durationSec:minutes*60,restSec:0,weight:0,weightUnit:'kg',estimatedFields:['durationSec'],notes:'活动计时，0表示不额外负重；没有伪造动作示范。'})
@@ -45,5 +46,5 @@ export function knowledgePrograms(exercises){
     p.id='knowledge-met-'+activity.code;p.nameZh=activity.nameZh;p.sourceGuideId='activity-compendium-2024';p.sourceType='guideline-derived';p.sourceName='2024 Adult Compendium · '+activity.code;p.sourceUrl=activityReference.sourceUrl;p.activityCode=activity.code;p.knowledgeCategory='活动能耗参考';p.notes='对应已加载活动类型与MET；具体训练日和动作由应用编排。MET是人群估计，不是个人实测。高强度方案需要训练基础，不用于新手默认。';p.days=p.days.map(d=>({...d,exerciseItems:d.exerciseItems.map(e=>({...e,sets:3,reps:vigorous?8:12,restSec:activity.code==='02040'?30:90}))}));plans.push(p)
   }
   for(const p of plans){p.sourceGuideId??=p.sourceName.includes('ACSM')?'acsm-resistance-2026':p.sourceName.includes('CDC')?'cdc-adults':'china-fitness-2017';p.knowledgeCategory??=p.sourceName.includes('ACSM')?'ACSM 抗阻指南':p.sourceName.includes('CDC')?'国际成人活动指南':'力量与增肌';p.days=p.days.map(d=>({...d,exerciseItems:d.exerciseItems.filter(e=>!needsPartner(exercises.find(x=>x.id===e.exerciseId)))}))}
-  return plans
+  return plans.map(p=>({...p,filters:programFilters(p,exercises)}))
 }

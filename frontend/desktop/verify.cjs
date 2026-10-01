@@ -2,7 +2,8 @@
 exports.run=async({app,win,fs,path,state,credential,entry})=>{
   const errors=[];win.webContents.on('console-message',(event,level,message)=>{if(event.level==='error'||level===3)errors.push(event.message||message)})
   await new Promise(resolve=>win.webContents.once('did-finish-load',resolve))
-  const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=(ok,msg)=>{if(!ok)throw new Error(msg)}
+  const passed=[]
+  const pause=ms=>new Promise(r=>setTimeout(r,ms)),check=(ok,msg)=>{if(!ok)throw new Error(msg);passed.push(msg);fs.writeFileSync(path.join(app.getPath('userData'),'verification-progress.json'),JSON.stringify({lastCheck:msg,count:passed.length},null,2))}
   await pause(1000)
   if(app.commandLine.hasSwitch('verify-closed-pipe')){process.stdout.write('Closed output pipe regression check\n');process.stderr.write('Closed error pipe regression check\n');await pause(100)}
   check((await win.webContents.executeJavaScript('document.body.innerText')).includes('先了解你的运动基础'),'Chinese first-launch profile')
@@ -37,9 +38,14 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
     check(!text.includes('Something went wrong')&&!text.includes('出了点问题'),'Route crashed: '+route+' '+errors.join('; '))
     check(text.includes(title),'Missing title: '+route+' '+text.slice(0,120))
     if(route==='programs'){
-      check(await win.webContents.executeJavaScript("document.querySelectorAll('.lrow.tap').length>=60&&document.body.innerText.includes('知识库来源')"),'Complete knowledge-linked preset catalog');
-      win.webContents.enableDeviceEmulation({screenPosition:'mobile',screenSize:{width:360,height:800},viewPosition:{x:0,y:0},viewSize:{width:360,height:800},deviceScaleFactor:1,scale:1})
-      await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.lrow.tap')).find(b=>b.textContent.includes('ACSM 2026')).click()",true);await pause(300)
+      check(await win.webContents.executeJavaScript("document.querySelectorAll('.source-card').length===8&&document.querySelectorAll('.template-card').length===0&&document.querySelectorAll('.program-filters select').length===4"),'Knowledge sources first, four filters, no flat plan pile');
+      win.webContents.enableDeviceEmulation({screenPosition:'mobile',screenSize:{width:360,height:800},viewPosition:{x:0,y:0},viewSize:{width:360,height:800},deviceScaleFactor:1,scale:1});await pause(200)
+      fs.writeFileSync(path.join(app.getPath('userData'),'program-sources-mobile.png'),(await win.webContents.capturePage({x:0,y:0,width:360,height:800})).toPNG())
+      await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.source-card')).find(b=>b.textContent.includes('ACSM 2026')).click()",true);await pause(200)
+      check(await win.webContents.executeJavaScript("document.querySelectorAll('.category-card').length>0&&document.querySelectorAll('.template-card').length===0&&location.hash.includes('source=acsm')"),'Source opens categories and keeps a back-navigation history entry')
+      await win.webContents.executeJavaScript("document.querySelector('.category-card').click()",true);await pause(200)
+      check(await win.webContents.executeJavaScript("document.querySelectorAll('.template-card').length===3&&location.hash.includes('category=')"),'Category opens its three ACSM plans')
+      await win.webContents.executeJavaScript("document.querySelector('.template-card').click()",true);await pause(300)
       check(await win.webContents.executeJavaScript("document.body.innerText.includes('训练预填')&&document.body.innerText.includes('180 s')&&document.body.innerText.includes('80% 1RM')"),'Official-derived program prescription review')
       check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.prescription-grid input')).every(i=>{const c=getComputedStyle(i),r=i.getBoundingClientRect();return c.color==='rgb(255, 255, 255)'&&c.backgroundColor!=='rgb(255, 255, 255)'&&r.width>=90&&r.right<=innerWidth})"),'Readable dark numeric fields at 360px')
       check(await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.prescription-grid')).every(g=>Array.from(g.querySelectorAll('label')).find(l=>l.textContent.includes('重量'))?.querySelector('input').value.trim()!=='')"),'Preset load is prefilled in the editable numeric field')
@@ -79,12 +85,13 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   await win.webContents.executeJavaScript("window.__directCoach=true;Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='生成训练与饮食方案').click()",true)
   for(let i=0;i<60;i++){await pause(250);coachText=await win.webContents.executeJavaScript('document.body.innerText');if(coachText.includes('审核训练与饮食'))break}
   check(coachText.includes('审核训练与饮食')&&!coachText.includes('回答完了，直接生成'),'Sufficient conditions skip questions')
+  await require('./verify-plan-layout.cjs').run({win,check,pause,fs,path,app})
   await win.webContents.executeJavaScript("window.fetch=window.__originalFetch;document.querySelector('.feature-page').scrollIntoView({block:'start'})");await pause(200)
   check(await win.webContents.executeJavaScript("document.querySelectorAll('.day-plans').length===2&&document.querySelectorAll('.day-track').length===2"),'Training and meals use independent date carousels')
-  await win.webContents.executeJavaScript("document.querySelector('.day-plans .day-dates button:nth-child(2)').click()",true);await pause(300)
+  await win.webContents.executeJavaScript("document.querySelector('.day-plans .day-dates button:nth-child(2)').click()",true);await pause(650)
   check(await win.webContents.executeJavaScript("document.querySelectorAll('.day-plans')[0].querySelector('.day-dates button[aria-pressed=true]').textContent.includes('周二')&&document.querySelectorAll('.day-plans')[1].querySelector('.day-dates button[aria-pressed=true]').textContent.includes('周一')"),'Training date change preserves independently selected food date')
   check(await win.webContents.executeJavaScript("document.querySelector('.day-track').getBoundingClientRect().height<180&&document.documentElement.scrollWidth<=innerWidth"),'Rest-day carousel shrinks rather than retaining longest training day')
-  await win.webContents.executeJavaScript("document.querySelector('.day-plans .day-dates button:first-child').click()",true);await pause(300)
+  await win.webContents.executeJavaScript("document.querySelector('.day-plans .day-dates button:first-child').click()",true);await pause(650)
   fs.writeFileSync(path.join(app.getPath('userData'),'assistant-mobile.png'),(await win.webContents.capturePage()).toPNG())
   await win.webContents.executeJavaScript("Array.from(document.querySelectorAll('.seg button')).find(b=>b.textContent==='饮食计划')?.click()",true);await pause(300)
   fs.writeFileSync(path.join(app.getPath('userData'),'assistant-food-mobile.png'),(await win.webContents.capturePage()).toPNG())
@@ -142,6 +149,6 @@ exports.run=async({app,win,fs,path,state,credential,entry})=>{
   check(await win.webContents.executeJavaScript('Array.from(document.images).some(img=>img.complete&&img.naturalWidth>0&&img.src.includes("/img/"))'),'Offline exercise image decode')
   await win.webContents.executeJavaScript("window.xunlianDesktop.credentialSet('')")
   check(!errors.length,'Renderer errors: '+errors.join('; '))
-  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Compact mobile credential actions','Mock short intake, direct generation, local portion calibration and saved proposal','Recipe ingredients, detailed steps and step-by-step cooking','Separate persistent shopping checklist','Planned portion editing never records actual intake','Independent date card navigation and compact rest-day height','Photo image request, automatic estimated intake and explicit single-meal replacement','Official nutrition basis and energy display','Complete loaded knowledge catalog with source/type filters and numeric load prefill','Dynamic balance notice and retained actual records','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
+  const report={status:'PASS',checkedAt:new Date().toISOString(),platform:process.platform,packaged:app.isPackaged,checks:['Chinese first-launch profile','DPAPI credential round-trip and encrypted file','State IPC round-trip and credential redaction','Prefill preserves actual records','Source 120-second rest preset and countdown','Bilingual completion sheet','Completion advances to next exercise','Ten offline routes','2648 original media and 22 higher-resolution photo SHA-256 hashes','Readable dark/light program numeric fields at 360px','Credential visibility toggle','Compact mobile credential actions','Mock short intake, direct generation, local portion calibration and saved proposal','Recipe ingredients, detailed steps and step-by-step cooking','Separate persistent shopping checklist','Planned portion editing never records actual intake','Independent date card navigation and compact rest-day height','Photo image request, automatic estimated intake and explicit single-meal replacement','Official nutrition basis and energy display','Three-level source/category/plan browser with four filters and numeric load prefill','Full-width nutrition summary; no single-character lines at 320/360/412px with enlarged text','Continuous date change and rightward touch swipe without resize snapping','Apply action stays above bottom navigation at page end','Dynamic balance notice and retained actual records','Offline exercise image decoding'],rendererErrors:errors,profile:'isolated verification profile; synthetic workout'}
   fs.writeFileSync(path.join(app.getPath('userData'),'verification-report.json'),JSON.stringify(report,null,2));app.quit()
 }
