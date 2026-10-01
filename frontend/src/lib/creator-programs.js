@@ -1,0 +1,28 @@
+// Verified author-published catalogue summaries, not copied videos or invented prescriptions.
+const course=(id,creator,name,url,category,goals,bodyParts,extra={})=>({id:'creator-'+id,creator,name,url,category,goals,bodyParts,region:'international',checkedAt:'2026-10-01',access:'public',minutesMax:null,intensity:null,...extra})
+export const creatorPrograms=[
+  course('pam-beginner','Pamela Reif','20分钟新手全身徒手课','https://www.youtube.com/watch?v=UItWltVZZmE','居家跟练',['lose','maintain'],['full'],{minutesMax:20,equipment:'无需负重器材',summary:'原作者公开的新手版全身课程；按视频实际节奏与个人能力跟练。',aliases:['帕梅拉','pamela','pamela reif']}),
+  course('heria-begin','Chris Heria','Begin Your Fitness Journey · 徒手入门','https://www.heriapro.com/programs','徒手力量',['lose','gain','maintain'],['full'],{access:'mixed',equipment:'具体器材按原课程核对',summary:'原作者目录的Beginner分级入门计划；完整动作参数需在原App核对，不能当作已取得全套免费内容。',aliases:['chris heria','克里斯','heria']}),
+  course('heria-core','Chris Heria','8分钟核心训练 · 2026','https://chrisheria.com/blogs/news/1-3','核心训练',['maintain'],['waist'],{minutesMax:8,equipment:'自重',summary:'原页提供不同基础的计时选择：初级30秒动作/30秒休息，中级40/20，高级45/15。动作细节仍按原课；不因标题而默认每天高努力训练。',aliases:['chris heria','克里斯','heria']}),
+  course('rowan-home','Rowan Row','20分钟居家无器械训练参考','https://www.rowanrow.com/videos','居家跟练',['lose','maintain'],['full'],{equipment:'无需负重器材',summary:'原官网列出的公开训练视频。标题为20分钟，但目录播放器时长为4:56，可能是示范短片；完整计时与组次待核对，不按标题硬填。',aliases:['rowan row','rowan']}),
+  course('rowan-shred','Rowan Row','SHRED · 减脂计划介绍','https://www.rowanrow.com/fitness-plans','付费方案介绍',['lose'],['full'],{access:'paid',summary:'原作者付费方案目录；当前仅收录介绍与来源，未取得完整动作表。',aliases:['rowan row','rowan']}),
+  course('rowan-bulk','Rowan Row','BULKING · 增肌计划介绍','https://www.rowanrow.com/fitness-plans','付费方案介绍',['gain'],['full'],{access:'paid',summary:'原作者付费增肌方案入口；购买后的实际参数可用原文导入审核。',aliases:['rowan row','rowan']}),
+  course('chloe-daily20','Chloe Ting','2024 Daily 20 · 忙碌日徒手计划','https://chloeting.com/program/2024/daily-20-challenge','居家跟练',['lose','maintain'],['full'],{minutesMax:24,period:'19天',equipment:'训练垫',summary:'每次主体20–24分钟，热身与放松另计；来源允许按能力调整。',aliases:['chloe ting','chloe']}),
+  course('chloe-weight','Chloe Ting','2024 Weight Loss · 减脂挑战','https://chloeting.com/program/2024/weight-loss-challenge','居家跟练',['lose'],['full','waist'],{minutesMax:43,period:'25天',equipment:'训练垫',summary:'原目录的新手友好计划，每次22–43分钟；实际日程、低冲击替代与休息以原方案为准。',aliases:['chloe ting','chloe']}),
+  course('chloe-toned','Chloe Ting','2026 Get Toned · 全身抗阻','https://chloeting.com/program/2026/get-toned-challenge','哑铃力量',['gain','maintain'],['full'],{minutesMax:41,period:'20天',equipment:'哑铃、训练垫',summary:'原作者全身抗阻计划，每次21–41分钟；博主演示公斤数不作为用户默认负重。',aliases:['chloe ting','chloe']}),
+  course('caroline-epic','Caroline Girvan','EPIC · 公开力量系列','https://carolinegirvan.com/programs/epic','哑铃力量',['gain','maintain'],['full'],{minutesMax:50,period:'10周',equipment:'哑铃、训练垫',summary:'原系列每周5次、每次约30–50分钟；按上下肢分配，有公开YouTube版本。初学者先选基础课程，不直接套进阶训练量。',aliases:['caroline girvan','caroline','卡罗琳']}),
+  course('caroline-iron','Caroline Girvan','IRON · 六周公开增肌系列','https://carolinegirvan.com/programs/iron','哑铃力量',['gain','maintain'],['full'],{minutesMax:30,period:'6周公开版',equipment:'哑铃、训练垫、臀部弹力带',summary:'约30分钟/次、每周5次，六周YouTube版与十周CGX版内容不同；当前收录六周公开版介绍。',aliases:['caroline girvan','caroline','卡罗琳']}),
+  course('heather-12week','Heather Robertson','HR12WEEK · 十二周公开计划指南','https://heatherrobertson.com/wp-content/uploads/HR_12_WEEK_WORKOUT_PLAN_GUIDE_Master.pdf','综合体能',['lose','gain','maintain'],['full'],{period:'12周',equipment:'按原指南具体课次核对',summary:'原作者公开的训练指南入口；课程参数需按对应版本核对，新App订阅方案不当作免费原计划。',aliases:['heather robertson','heather']}),
+  course('anna-hiit','Growingannanas / Anna','HIIT IT HARD · 28天挑战','https://shop.growwithanna.com/pages/hiitithard','综合体能',['lose','maintain'],['full','cardio'],{intensity:'high',period:'28天',equipment:'哑铃、训练垫、弹力带；部分课次需稳固椅子',summary:'原作者混合抗阻、徒手、HIIT与柔韧的高强度挑战，YouTube有公开课；器材示范重量不当作个人处方，缺基础优先其他入门课程。',aliases:['growingannanas','grow with anna','anna engelschall','安娜']}),
+  course('madfit-youtube','MadFit','MadFit · 公开跟练课程库','https://madfit.co/','居家跟练',['lose','maintain'],['full'],{summary:'原官网提供YouTube课程入口，涵盖力量、HIIT、瑜伽与普拉提；这是课程库，不是一套已核对完整参数的周计划。',aliases:['madfit','maddie lymburner']}),
+  course('jeremy-fullbody','Jeremy Ethier','2026 · 每周三次全身训练参考','https://www.youtube.com/watch?v=n_YW24F5HGc','器械力量',['gain','maintain'],['full'],{equipment:'健身房器械，按原课核对',summary:'原作者公开讲解的每周三次全身训练思路；具体动作、组次与个人适配按原课核对。',aliases:['jeremy ethier','jeremy','杰里米']}),
+  course('jeff-pure','Jeff Nippard','Pure Bodybuilding · 分化增肌计划介绍','https://jeffnippard.com/products/the-pure-bodybuilding-program','付费方案介绍',['gain'],['full'],{access:'paid',period:'10周',equipment:'健身房，按所选分化核对',summary:'原作者付费方案公开介绍，提供全身、上下肢与推拉腿版本；当前没有收录未取得的付费动作表。',aliases:['jeff nippard','nippard','杰夫尼帕德']})
+]
+export function matchingCreatorPrograms(filters={},search=''){
+  const q=search.trim().toLowerCase()
+  return creatorPrograms.filter(p=>(!filters.goal||p.goals.includes(filters.goal))&&(!filters.intensity||p.intensity===filters.intensity)&&(!filters.body||p.bodyParts.includes(filters.body))&&(!filters.duration||(Number.isFinite(p.minutesMax)&&(filters.duration==='short'?p.minutesMax<=30:filters.duration==='medium'?p.minutesMax>30&&p.minutesMax<=60:p.minutesMax>60)))&&(!q||[p.creator,p.name,p.category,...p.aliases].join(' ').toLowerCase().includes(q)))
+}
+export function creatorKnowledge(request=''){
+  const text=request.toLowerCase()
+  return creatorPrograms.filter(p=>p.aliases.some(a=>text.includes(a))).slice(0,8).map(p=>({id:p.id,creator:p.creator,title:p.creator+' · '+p.name,url:p.url,summary:p.summary,kind:'creator-reference',scope:'博主公开目录摘要，非官方标准；完整动作/组次未核对，不能编造原课程。按现有动作库重编须说明为应用适配，并遵守官方恢复与营养规则。'}))
+}

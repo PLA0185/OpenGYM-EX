@@ -27,7 +27,7 @@ export default function Assistant(){
   const [request,setRequest]=useState(saved?.request||''),[intake,setIntake]=useState(saved?.brief||null),[answers,setAnswers]=useState({}),[profile,setProfile]=useState(clone(saved?.profile||planningContext(S))),[proposal,setProposal]=useState(saved||null),[error,setError]=useState(''),[modification,setModification]=useState(''),[planTab,setPlanTab]=useState('training')
   const foods=allFoods(S),recipes=eligibleRecipes(allRecipes(S),foods,profile).slice(0,40),candidates=coachCatalog(allExercises(S),profile),dates=proposal?.dates||dateKeys(monday())
   const provider=()=>createDeepSeek({credential:getCredential,model:S.xunlian.ai.model})
-  const briefInput=stored=>{const k=coachKnowledge(allExercises(S),stored);return {task:COACH_BRIEF_PROMPT,request,existingProfile:stored,knowledge:{sources:k.sources,rules:k.rules}}}
+  const briefInput=stored=>{const k=coachKnowledge(allExercises(S),stored,request);return {task:COACH_BRIEF_PROMPT,request,existingProfile:stored,knowledge:{sources:k.sources,rules:k.rules}}}
   async function buildProposal(signal,resolved,brief,conversation,previous=null){
     if(!Number.isInteger(resolved.age)||resolved.age<18||resolved.age>64)throw new Error('当前自动营养编排面向18–64岁成年人，请使用手动或专业指导方案。')
     if(resolved.specialDiet)throw new Error('特殊医疗或孕期需求请使用专业指导方案。')
@@ -35,7 +35,7 @@ export default function Assistant(){
     if(!allowedRecipes.length||!supplied.length)throw new Error('当前限制下没有足够的动作或营养完整菜谱，请补充数据或修改条件。')
     const menu=feasibleMenu(allowedRecipes,foods,target,{profile:resolved})
     if(!menu)throw new Error('当前菜谱在忌口、餐数和已知价格预算条件下没有可行组合，需要补充菜谱或原料价格。')
-    const knowledge=coachKnowledge(allExercises(S),resolved)
+    const knowledge=coachKnowledge(allExercises(S),resolved,request+' '+modification)
     const input={task:COACH_PLAN_PROMPT,request,answers:conversation,requiredSlots:requiredMealSlots(resolved),context:{...resolved,target},assumptions:brief.assumptions,dates,exercises:supplied.map(e=>({nameEn:e.nameEn||e.n,nameZh:e.nameZh,equipment:e.eq,muscle:e.tg,type:e.bp})),recipes:allowedRecipes.map(r=>({id:r.id,name:r.nameZh,ingredients:r.ingredients.map(i=>foods.find(f=>f.id===i.foodId)?.nameZh),nutrition:recipeNutrition(r,foods).nutrition})),feasibleDayMenu:menu,knowledge,previous,modification}
     let program,balanced
     const result=await provider().generateStructured('coach',input,{signal,validate:data=>{if(data.referenceGuideIds?.some(id=>!knowledge.sources.some(g=>g.id===id)))throw new Error('使用了未提供的知识来源，请仅引用 knowledge.sources。');program=mapCoachProgram(data.program,supplied,uid(),S.xunlian.revision);checkCoachProgram(program,catalog,resolved);if(target.nutritionPolicy){const prospective=clone(S);prospective.active=null;prospective.xunlian.profile=resolved;prospective.xunlian.target=target;applyProgram(prospective,program,catalog,uid);target=linkedTarget(prospective,resolved)}balanced=balanceCoachMeals(data,dates,allowedRecipes,foods,resolved,target,feasibleMenu(allowedRecipes,foods,target,{profile:resolved}),uid)}})
