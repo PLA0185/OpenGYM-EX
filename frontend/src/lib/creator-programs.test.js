@@ -15,7 +15,8 @@ it('only includes explicitly named creator references in AI input and preserves 
 })
 it('keeps rejected Chinese creators out and records official sources with honest access labels',()=>{
   expect(new Set(creatorPrograms.map(p=>p.creator)).size).toBeGreaterThanOrEqual(10)
-  expect(creatorPrograms.every(p=>p.region==='international'&&p.url.startsWith('https://')&&p.checkedAt==='2026-10-01')).toBe(true)
+  expect(creatorPrograms.every(p=>p.url.startsWith('https://')&&p.checkedAt==='2026-10-01')).toBe(true)
+  expect(new Set(creatorPrograms.filter(p=>p.region==='china').map(p=>p.creator))).toEqual(new Set(['烧毁一切就是美','北美运动学博士Bruce_PhD']))
   expect(creatorPrograms.some(p=>p.access==='paid')).toBe(true)
   expect(creatorPrograms.some(p=>p.access==='public')).toBe(true)
   expect(new Set(creatorPrograms.map(p=>p.id)).size).toBe(creatorPrograms.length)

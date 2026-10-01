@@ -31,9 +31,10 @@ export function eligibleJointPrograms(programs,catalog,profile){
     }catch{return false}
   })
 }
-export function selectCoachCandidates(candidates){
+export function selectCoachCandidates(candidates,preferredIds=[]){
   const result=[],seen=new Set(),groups=new Map()
-  for(const e of candidates.filter(e=>e.translationSource==='manual'||e.custom)){result.push(e);seen.add(e.id)}
+  for(const id of preferredIds){const e=candidates.find(e=>e.id===id);if(e&&!seen.has(id)){result.push(e);seen.add(id)}}
+  for(const e of candidates.filter(e=>e.translationSource==='manual'||e.custom)){if(!seen.has(e.id)){result.push(e);seen.add(e.id)}}
   for(const e of candidates){const key=e.bp+'|'+e.eq,used=groups.get(key)||0;if(seen.has(e.id)||used>=8)continue;result.push(e);seen.add(e.id);groups.set(key,used+1)}
   return result.slice(0,300)
 }

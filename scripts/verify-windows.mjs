@@ -17,7 +17,8 @@ writeFileSync(join(profile,'workout-fixture.json'),JSON.stringify(fixture))
 const source=process.argv.includes('--source')
 const executable=source?join(root,'frontend/node_modules/electron/dist/electron.exe'):resolve(process.argv[2]||join(root,'artifacts/windows/win-unpacked/OpenGymEX.exe'))
 const env={...process.env};delete env.ELECTRON_RUN_AS_NODE
-const child=spawn(executable,[...(source?[join(root,'frontend')]:[]),'--verify-build','--verify-closed-pipe','--verify-profile='+profile],{env,windowsHide:true,stdio:['ignore','pipe','pipe']})
+// Offscreen screenshots must not depend on the local GPU driver's availability.
+const child=spawn(executable,[...(source?[join(root,'frontend')]:[]),'--disable-gpu','--verify-build','--verify-closed-pipe','--verify-profile='+profile],{env,windowsHide:true,stdio:['ignore','pipe','pipe']})
 // Reproduce the launcher exiting and closing its stdout/stderr pipe handles.
 child.stdout.destroy();child.stderr.destroy()
 const timer=setTimeout(()=>{child.kill();process.exitCode=1},180000)
