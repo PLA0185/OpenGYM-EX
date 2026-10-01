@@ -51,7 +51,7 @@ jobs:
         working-directory: frontend
       - run: node scripts/data/validate-seed.mjs
       - run: node --test scripts/howtocook-local.test.mjs
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
       - run: python scripts/data/test-hd-media.py
@@ -84,8 +84,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: ./api
           push: false
